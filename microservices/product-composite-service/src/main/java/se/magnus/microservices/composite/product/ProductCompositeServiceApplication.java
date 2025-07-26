@@ -5,45 +5,46 @@ import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.info.Contact;
 import io.swagger.v3.oas.models.info.Info;
 import io.swagger.v3.oas.models.info.License;
+import java.util.LinkedHashMap;
+import java.util.Map;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.SpringApplication;
+import org.springframework.boot.actuate.health.CompositeReactiveHealthContributor;
+import org.springframework.boot.actuate.health.ReactiveHealthContributor;
+import org.springframework.boot.actuate.health.ReactiveHealthIndicator;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
-import org.springframework.web.client.RestTemplate;
+import reactor.core.scheduler.Scheduler;
+import reactor.core.scheduler.Schedulers;
+import se.magnus.microservices.composite.product.services.ProductCompositeIntegration;
 
 @SpringBootApplication
 @ComponentScan("se.magnus")
 public class ProductCompositeServiceApplication {
 
-  @Value("${api.common.version}")
-  String apiVersion;
-  @Value("${api.common.title}")
-  String apiTitle;
-  @Value("${api.common.description}")
-  String apiDescription;
-  @Value("${api.common.termsOfService}")
-  String apiTermsOfService;
-  @Value("${api.common.license}")
-  String apiLicense;
-  @Value("${api.common.licenseUrl}")
-  String apiLicenseUrl;
-  @Value("${api.common.externalDocDesc}")
-  String apiExternalDocDesc;
-  @Value("${api.common.externalDocUrl}")
-  String apiExternalDocUrl;
-  @Value("${api.common.contact.name}")
-  String apiContactName;
-  @Value("${api.common.contact.url}")
-  String apiContactUrl;
-  @Value("${api.common.contact.email}")
-  String apiContactEmail;
+  private static final Logger LOG = LoggerFactory.getLogger(ProductCompositeServiceApplication.class);
 
-  @Bean
-  RestTemplate restTemplate() {
-    return new RestTemplate();
-  }
+  @Value("${api.common.version}")         String apiVersion;
+  @Value("${api.common.title}")           String apiTitle;
+  @Value("${api.common.description}")     String apiDescription;
+  @Value("${api.common.termsOfService}")  String apiTermsOfService;
+  @Value("${api.common.license}")         String apiLicense;
+  @Value("${api.common.licenseUrl}")      String apiLicenseUrl;
+  @Value("${api.common.externalDocDesc}") String apiExternalDocDesc;
+  @Value("${api.common.externalDocUrl}")  String apiExternalDocUrl;
+  @Value("${api.common.contact.name}")    String apiContactName;
+  @Value("${api.common.contact.url}")     String apiContactUrl;
+  @Value("${api.common.contact.email}")   String apiContactEmail;
 
+  /**
+   * Will exposed on $HOST:$PORT/swagger-ui.html
+   *
+   * @return the common OpenAPI documentation
+   */
   @Bean
   public OpenAPI getOpenApiDocumentation() {
     return new OpenAPI()
@@ -63,8 +64,41 @@ public class ProductCompositeServiceApplication {
                     .url(apiExternalDocUrl));
   }
 
+  private final Integer threadPoolSize;
+  private final Integer taskQueueSize;
+
+  @Autowired
+  public ProductCompositeServiceApplication(
+          @Value("${app.threadPoolSize:10}") Integer threadPoolSize,
+          @Value("${app.taskQueueSize:100}") Integer taskQueueSize
+  ) {
+    this.threadPoolSize = threadPoolSize;
+    this.taskQueueSize = taskQueueSize;
+  }
+
+  @Bean
+  public Scheduler publishEventScheduler() {
+    LOG.info("Creates a messagingScheduler with connectionPoolSize = {}", threadPoolSize);
+    return Schedulers.newBoundedElastic(threadPoolSize, taskQueueSize, "publish-pool");
+  }
+
+  @Autowired
+  ProductCompositeIntegration integration;
+
+  @Bean
+  ReactiveHealthContributor coreServices() {
+
+    final Map<String, ReactiveHealthIndicator> registry = new LinkedHashMap<>();
+
+    registry.put("product", () -> integration.getProductHealth());
+    registry.put("recommendation", () -> integration.getRecommendationHealth());
+    registry.put("review", () -> integration.getReviewHealth());
+
+    return CompositeReactiveHealthContributor.fromMap(registry);
+  }
 
   public static void main(String[] args) {
     SpringApplication.run(ProductCompositeServiceApplication.class, args);
   }
+
 }

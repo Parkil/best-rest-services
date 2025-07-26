@@ -25,7 +25,7 @@ class ProductServiceApplicationTests extends MongoDbTestBase {
 
   @BeforeEach
   void setupDb() {
-    repository.deleteAll();
+    repository.deleteAll().block();
   }
 
   @Test
@@ -35,7 +35,7 @@ class ProductServiceApplicationTests extends MongoDbTestBase {
 
     postAndVerifyProduct(productId, OK);
 
-    assertTrue(repository.findByProductId(productId).isPresent());
+    assertTrue(repository.findByProductId(productId).blockOptional().isPresent());
 
     getAndVerifyProduct(productId, OK).jsonPath("$.productId").isEqualTo(productId);
   }
@@ -47,7 +47,7 @@ class ProductServiceApplicationTests extends MongoDbTestBase {
 
     postAndVerifyProduct(productId, OK);
 
-    assertTrue(repository.findByProductId(productId).isPresent());
+    assertTrue(repository.findByProductId(productId).blockOptional().isPresent());
 
     postAndVerifyProduct(productId, UNPROCESSABLE_ENTITY)
       .jsonPath("$.path").isEqualTo("/product")
@@ -60,10 +60,10 @@ class ProductServiceApplicationTests extends MongoDbTestBase {
     int productId = 1;
 
     postAndVerifyProduct(productId, OK);
-    assertTrue(repository.findByProductId(productId).isPresent());
+    assertTrue(repository.findByProductId(productId).blockOptional().isPresent());
 
     deleteAndVerifyProduct(productId, OK);
-    assertFalse(repository.findByProductId(productId).isPresent());
+    assertFalse(repository.findByProductId(productId).blockOptional().isPresent());
 
     deleteAndVerifyProduct(productId, OK);
   }
