@@ -1,6 +1,5 @@
 package se.magnus.microservices.core.recommendation;
 
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -33,7 +32,6 @@ class PersistenceTests extends MongoDbTestBase {
     RecommendationEntity entity = new RecommendationEntity(1, 2, "a", 3, "c");
     savedEntity = repository.save(entity).block();
 
-    Assertions.assertNotNull(savedEntity);
     assertEqualsRecommendation(entity, savedEntity);
   }
 
@@ -45,10 +43,9 @@ class PersistenceTests extends MongoDbTestBase {
     repository.save(newEntity).block();
 
     RecommendationEntity foundEntity = repository.findById(newEntity.getId()).block();
-    Assertions.assertNotNull(foundEntity);
     assertEqualsRecommendation(newEntity, foundEntity);
 
-    assertEquals(2, repository.count().block());
+    assertEquals(2, (long)repository.count().block());
   }
 
   @Test
@@ -57,7 +54,6 @@ class PersistenceTests extends MongoDbTestBase {
     repository.save(savedEntity).block();
 
     RecommendationEntity foundEntity = repository.findById(savedEntity.getId()).block();
-    Assertions.assertNotNull(foundEntity);
     assertEquals(1, (long)foundEntity.getVersion());
     assertEquals("a2", foundEntity.getAuthor());
   }
@@ -65,7 +61,7 @@ class PersistenceTests extends MongoDbTestBase {
   @Test
   void delete() {
     repository.delete(savedEntity).block();
-    assertFalse(repository.existsById(savedEntity.getId()).blockOptional().isPresent());
+    assertFalse(repository.existsById(savedEntity.getId()).block());
   }
 
   @Test
@@ -73,7 +69,7 @@ class PersistenceTests extends MongoDbTestBase {
     List<RecommendationEntity> entityList = repository.findByProductId(savedEntity.getProductId()).collectList().block();
 
     assertThat(entityList, hasSize(1));
-    assertEqualsRecommendation(savedEntity, entityList.getFirst());
+    assertEqualsRecommendation(savedEntity, entityList.get(0));
   }
 
   @Test
@@ -92,21 +88,18 @@ class PersistenceTests extends MongoDbTestBase {
     RecommendationEntity entity2 = repository.findById(savedEntity.getId()).block();
 
     // Update the entity using the first entity object
-    Assertions.assertNotNull(entity1);
     entity1.setAuthor("a1");
     repository.save(entity1).block();
 
     //  Update the entity using the second entity object.
-    // This should fail since the second entity now holds an old version number, i.e., an Optimistic Lock Error
+    // This should fail since the second entity now holds an old version number, i.e. an Optimistic Lock Error
     assertThrows(OptimisticLockingFailureException.class, () -> {
-      Assertions.assertNotNull(entity2);
       entity2.setAuthor("a2");
       repository.save(entity2).block();
     });
 
     // Get the updated entity from the database and verify its new sate
     RecommendationEntity updatedEntity = repository.findById(savedEntity.getId()).block();
-    Assertions.assertNotNull(updatedEntity);
     assertEquals(1, (int)updatedEntity.getVersion());
     assertEquals("a1", updatedEntity.getAuthor());
   }

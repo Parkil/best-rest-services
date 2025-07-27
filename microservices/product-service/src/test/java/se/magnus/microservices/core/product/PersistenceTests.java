@@ -1,5 +1,6 @@
 package se.magnus.microservices.core.product;
 
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -9,6 +10,8 @@ import org.springframework.dao.OptimisticLockingFailureException;
 import reactor.test.StepVerifier;
 import se.magnus.microservices.core.product.persistence.ProductEntity;
 import se.magnus.microservices.core.product.persistence.ProductRepository;
+
+import java.util.Objects;
 
 @DataMongoTest
 class PersistenceTests extends MongoDbTestBase {
@@ -24,11 +27,11 @@ class PersistenceTests extends MongoDbTestBase {
 
     ProductEntity entity = new ProductEntity(1, "n", 1);
     StepVerifier.create(repository.save(entity))
-            .expectNextMatches(createdEntity -> {
-              savedEntity = createdEntity;
-              return areProductEqual(entity, savedEntity);
-            })
-            .verifyComplete();
+      .expectNextMatches(createdEntity -> {
+        savedEntity = createdEntity;
+        return areProductEqual(entity, savedEntity);
+      })
+      .verifyComplete();
   }
 
 
@@ -37,12 +40,12 @@ class PersistenceTests extends MongoDbTestBase {
     ProductEntity newEntity = new ProductEntity(2, "n", 2);
 
     StepVerifier.create(repository.save(newEntity))
-            .expectNextMatches(createdEntity -> newEntity.getProductId() == createdEntity.getProductId())
-            .verifyComplete();
+      .expectNextMatches(createdEntity -> newEntity.getProductId() == createdEntity.getProductId())
+      .verifyComplete();
 
     StepVerifier.create(repository.findById(newEntity.getId()))
-            .expectNextMatches(foundEntity -> areProductEqual(newEntity, foundEntity))
-            .verifyComplete();
+      .expectNextMatches(foundEntity -> areProductEqual(newEntity, foundEntity))
+      .verifyComplete();
 
     StepVerifier.create(repository.count()).expectNext(2L).verifyComplete();
   }
@@ -51,14 +54,14 @@ class PersistenceTests extends MongoDbTestBase {
   void update() {
     savedEntity.setName("n2");
     StepVerifier.create(repository.save(savedEntity))
-            .expectNextMatches(updatedEntity -> updatedEntity.getName().equals("n2"))
-            .verifyComplete();
+      .expectNextMatches(updatedEntity -> updatedEntity.getName().equals("n2"))
+      .verifyComplete();
 
     StepVerifier.create(repository.findById(savedEntity.getId()))
-            .expectNextMatches(foundEntity ->
-                    foundEntity.getVersion() == 1
-                            && foundEntity.getName().equals("n2"))
-            .verifyComplete();
+      .expectNextMatches(foundEntity ->
+        foundEntity.getVersion() == 1
+        && foundEntity.getName().equals("n2"))
+      .verifyComplete();
   }
 
   @Test
@@ -71,8 +74,8 @@ class PersistenceTests extends MongoDbTestBase {
   void getByProductId() {
 
     StepVerifier.create(repository.findByProductId(savedEntity.getProductId()))
-            .expectNextMatches(foundEntity -> areProductEqual(savedEntity, foundEntity))
-            .verifyComplete();
+      .expectNextMatches(foundEntity -> areProductEqual(savedEntity, foundEntity))
+      .verifyComplete();
   }
 
   @Test
@@ -89,27 +92,29 @@ class PersistenceTests extends MongoDbTestBase {
     ProductEntity entity2 = repository.findById(savedEntity.getId()).block();
 
     // Update the entity using the first entity object
+    Assertions.assertNotNull(entity1);
     entity1.setName("n1");
     repository.save(entity1).block();
 
     //  Update the entity using the second entity object.
-    // This should fail since the second entity now holds a old version number, i.e. a Optimistic Lock Error
+    // This should fail since the second entity now holds a old version number, i.e. an Optimistic Lock Error
+    Assertions.assertNotNull(entity2);
     StepVerifier.create(repository.save(entity2)).expectError(OptimisticLockingFailureException.class).verify();
 
     // Get the updated entity from the database and verify its new sate
     StepVerifier.create(repository.findById(savedEntity.getId()))
-            .expectNextMatches(foundEntity ->
-                    foundEntity.getVersion() == 1
-                            && foundEntity.getName().equals("n1"))
-            .verifyComplete();
+      .expectNextMatches(foundEntity ->
+        foundEntity.getVersion() == 1
+        && foundEntity.getName().equals("n1"))
+      .verifyComplete();
   }
 
   private boolean areProductEqual(ProductEntity expectedEntity, ProductEntity actualEntity) {
     return
-            (expectedEntity.getId().equals(actualEntity.getId()))
-                    && (expectedEntity.getVersion() == actualEntity.getVersion())
-                    && (expectedEntity.getProductId() == actualEntity.getProductId())
-                    && (expectedEntity.getName().equals(actualEntity.getName()))
-                    && (expectedEntity.getWeight() == actualEntity.getWeight());
+      (expectedEntity.getId().equals(actualEntity.getId()))
+      && (Objects.equals(expectedEntity.getVersion(), actualEntity.getVersion()))
+      && (expectedEntity.getProductId() == actualEntity.getProductId())
+      && (expectedEntity.getName().equals(actualEntity.getName()))
+      && (expectedEntity.getWeight() == actualEntity.getWeight());
   }
 }

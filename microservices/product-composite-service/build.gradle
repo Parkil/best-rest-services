@@ -23,14 +23,14 @@ dependencies {
 
     implementation 'org.springframework.boot:spring-boot-starter-actuator'
     implementation 'org.springframework.boot:spring-boot-starter-webflux'
+    implementation 'org.springframework.cloud:spring-cloud-starter-stream-rabbit:4.3.0'
+    implementation 'org.springframework.cloud:spring-cloud-starter-stream-kafka:4.3.0'
     implementation 'org.springdoc:springdoc-openapi-starter-webflux-ui:2.8.9'
-    implementation 'org.springframework.cloud:spring-cloud-starter-stream-rabbit'
-    implementation 'org.springframework.cloud:spring-cloud-starter-stream-kafka'
-    implementation 'org.springframework:spring-messaging:7.0.0-M7'
-    implementation 'org.springframework.cloud:spring-cloud-stream:4.3.0'
 
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    testImplementation 'org.springframework.cloud:spring-cloud-stream-test-binder:4.3.0'
     testImplementation 'io.projectreactor:reactor-test'
+    testImplementation 'org.junit.jupiter:junit-jupiter:5.8.1'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 }
 

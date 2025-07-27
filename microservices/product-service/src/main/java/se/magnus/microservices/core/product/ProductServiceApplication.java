@@ -27,13 +27,16 @@ public class ProductServiceApplication {
   public static void main(String[] args) {
     ConfigurableApplicationContext ctx = SpringApplication.run(ProductServiceApplication.class, args);
 
-    String mongodDbHost = ctx.getEnvironment().getProperty("spring.data.mongodb.host");
-    String mongodDbPort = ctx.getEnvironment().getProperty("spring.data.mongodb.port");
-    LOG.info("Connected to MongoDb: " + mongodDbHost + ":" + mongodDbPort);
+    String mongoDbHost = ctx.getEnvironment().getProperty("spring.data.mongodb.host");
+    String mongoDbPort = ctx.getEnvironment().getProperty("spring.data.mongodb.port");
+    LOG.info("Connected to MongoDb: {}:{}", mongoDbHost, mongoDbPort);
   }
 
-  @Autowired
-  MongoOperations mongoTemplate;
+  private final MongoOperations mongoTemplate;
+
+  public ProductServiceApplication(MongoOperations mongoTemplate) {
+    this.mongoTemplate = mongoTemplate;
+  }
 
   @EventListener(ContextRefreshedEvent.class)
   public void initIndicesAfterStartup() {
