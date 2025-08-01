@@ -51,6 +51,8 @@ public class ProductCompositeIntegration implements ProductService, Recommendati
 
   private final Scheduler publishEventScheduler;
 
+  // Cannot find bean with qualifier 'publishEventScheduler' 오류 메시지는 신경 안써도 될듯
+  // 실제 테스트를 돌려보면 정상적으로 주입되어 표시된다
   public ProductCompositeIntegration(
           @Qualifier("publishEventScheduler") Scheduler publishEventScheduler,
 
