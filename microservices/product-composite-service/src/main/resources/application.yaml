@@ -76,6 +76,8 @@ app:
     host: localhost
     port: 7003
 
+# spring cloud + kafka 의 경우 이벤트가 처리되어도 topic 에 유지가 되지만, rabbitmq 의 경우 이벤트가 처리되면 topic 에서 제거된다
+# 처리된 이벤트를 나중에 확인하기 위해서 required-groups: auditGroup 을 별도로 설정한다
 spring.cloud.stream:
   defaultBinder: rabbit
   default.contentType: application/json
