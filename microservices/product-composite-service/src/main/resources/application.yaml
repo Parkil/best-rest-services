@@ -110,6 +110,7 @@ logging:
     root: INFO
     se.magnus: DEBUG
 
+# spring actuator 정보 설정
 management.endpoint.health.show-details: "ALWAYS"
 management.endpoints.web.exposure.include: "*"
 ---

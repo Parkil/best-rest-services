@@ -44,6 +44,7 @@ logging:
     se.magnus: DEBUG
     org.springframework.data.mongodb.core.ReactiveMongoTemplate: DEBUG
 
+# spring actuator 정보 설정
 management.endpoint.health.show-details: "ALWAYS"
 management.endpoints.web.exposure.include: "*"
 ---
