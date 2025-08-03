@@ -66,6 +66,7 @@ spring.cloud.stream.bindings.messageProcessor-in-0.consumer:
   instanceCount: 2
 
 ---
+# spring profile 을 분리해서 product service 를 다른 message partition 에 할당
 spring.config.activate.on-profile: streaming_instance_0
 
 spring.cloud.stream.bindings.messageProcessor-in-0.consumer.instanceIndex: 0
