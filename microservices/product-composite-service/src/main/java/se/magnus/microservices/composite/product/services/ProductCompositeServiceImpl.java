@@ -68,6 +68,7 @@ public class ProductCompositeServiceImpl implements ProductCompositeService {
     }
   }
 
+  @SuppressWarnings("unchecked")
   @Override
   public Mono<ProductAggregate> getProduct(int productId) {
 

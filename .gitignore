@@ -2,3 +2,6 @@
 /.gradle/
 /build/
 /.idea/
+.idea
+.idea/gradle.xml
+.idea/misc.xml
