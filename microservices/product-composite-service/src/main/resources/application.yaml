@@ -65,6 +65,20 @@ api:
 server.port: 7000
 server.error.include-message: always
 
+spring.application.name: product-composite
+
+app.eureka-server: localhost
+
+eureka:
+  client:
+    serviceUrl:
+      defaultZone: http://${app.eureka-server}:8761/eureka/
+    initialInstanceInfoReplicationIntervalSeconds: 5
+    registryFetchIntervalSeconds: 5
+  instance:
+    leaseRenewalIntervalInSeconds: 5
+    leaseExpirationDurationInSeconds: 5
+
 # spring cloud + kafka 의 경우 이벤트가 처리되어도 topic 에 유지가 되지만, rabbitmq 의 경우 이벤트가 처리되면 topic 에서 제거된다
 # 처리된 이벤트를 나중에 확인하기 위해서 required-groups: auditGroup 을 별도로 설정한다
 spring.cloud.stream:
@@ -107,16 +121,7 @@ spring.config.activate.on-profile: docker
 
 server.port: 8080
 
-app:
-  product-service:
-    host: product
-    port: 8080
-  recommendation-service:
-    host: recommendation
-    port: 8080
-  review-service:
-    host: review
-    port: 8080
+app.eureka-server: eureka
 
 spring.rabbitmq.host: rabbitmq
 
