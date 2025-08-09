@@ -7,3 +7,6 @@
 ```script
  docker buildx build -t alpine/jdk21 -f .\Dockerfile_alpine_jdk21 .
 ```
+
+### 주의사항
+1.신규 모듈을 만들면 settings.gradle 에 추가 하고 ./gradlew wrapper 실행
