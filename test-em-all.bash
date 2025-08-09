@@ -1,6 +1,5 @@
 #!/usr/bin/env bash
-# 해당 shell 은 linux shell 이기 때문에 linux 에서 실행 하거나 Windows 의 경우 WSL 에서 실행을 하여야 한다
-# jq 가 없어서 shell 실패를 하는 경우 sudo apt install jq 를 실행
+#
 # Sample usage:
 #
 #   HOST=localhost PORT=7000 ./test-em-all.bash
@@ -79,12 +78,56 @@ function waitForService() {
   echo "DONE, continues..."
 }
 
+function testCompositeCreated() {
+
+    # Expect that the Product Composite for productId $PROD_ID_REVS_RECS has been created with three recommendations and three reviews
+    if ! assertCurl 200 "curl http://$HOST:$PORT/product-composite/$PROD_ID_REVS_RECS -s"
+    then
+        echo -n "FAIL"
+        return 1
+    fi
+
+    set +e
+    assertEqual "$PROD_ID_REVS_RECS" $(echo $RESPONSE | jq .productId)
+    if [ "$?" -eq "1" ] ; then return 1; fi
+
+    assertEqual 3 $(echo $RESPONSE | jq ".recommendations | length")
+    if [ "$?" -eq "1" ] ; then return 1; fi
+
+    assertEqual 3 $(echo $RESPONSE | jq ".reviews | length")
+    if [ "$?" -eq "1" ] ; then return 1; fi
+
+    set -e
+}
+
+function waitForMessageProcessing() {
+    echo "Wait for messages to be processed... "
+
+    # Give background processing some time to complete...
+    sleep 1
+
+    n=0
+    until testCompositeCreated
+    do
+        n=$((n + 1))
+        if [[ $n == 40 ]]
+        then
+            echo " Give up"
+            exit 1
+        else
+            sleep 6
+            echo -n ", retry #$n "
+        fi
+    done
+    echo "All messages are now processed!"
+}
+
 function recreateComposite() {
   local productId=$1
   local composite=$2
 
-  assertCurl 200 "curl -X DELETE http://$HOST:$PORT/product-composite/${productId} -s"
-  curl -X POST http://$HOST:$PORT/product-composite -H "Content-Type: application/json" --data "$composite"
+  assertCurl 202 "curl -X DELETE http://$HOST:$PORT/product-composite/${productId} -s"
+  assertEqual 202 $(curl -X POST -s http://$HOST:$PORT/product-composite -H "Content-Type: application/json" --data "$composite" -w "%{http_code}")
 }
 
 function setupTestdata() {
@@ -139,9 +182,15 @@ then
   docker-compose up -d
 fi
 
-waitForService curl -X DELETE http://$HOST:$PORT/product-composite/$PROD_ID_NOT_FOUND
+waitForService curl http://$HOST:$PORT/actuator/health
+
+# Verify access to Eureka and that all four microservices are registered in Eureka
+assertCurl 200 "curl -H "accept:application/json" $HOST:8761/eureka/apps -s"
+assertEqual 4 $(echo $RESPONSE | jq ".applications.application | length")
 
 setupTestdata
+
+waitForMessageProcessing
 
 # Verify that a normal request works, expect three recommendations and three reviews
 assertCurl 200 "curl http://$HOST:$PORT/product-composite/$PROD_ID_REVS_RECS -s"
