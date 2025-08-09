@@ -5,21 +5,13 @@ import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.info.Contact;
 import io.swagger.v3.oas.models.info.Info;
 import io.swagger.v3.oas.models.info.License;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.SpringApplication;
-import org.springframework.boot.actuate.health.CompositeReactiveHealthContributor;
-import org.springframework.boot.actuate.health.ReactiveHealthContributor;
-import org.springframework.boot.actuate.health.ReactiveHealthIndicator;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.cloud.client.loadbalancer.LoadBalanced;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.web.reactive.function.client.WebClient;
-import se.magnus.microservices.composite.product.services.ProductCompositeIntegration;
-import org.springframework.cloud.client.loadbalancer.LoadBalanced;
-
-import java.util.LinkedHashMap;
-import java.util.Map;
 
 @SpringBootApplication
 @ComponentScan("se.magnus")
@@ -70,27 +62,6 @@ public class ProductCompositeServiceApplication {
             .externalDocs(new ExternalDocumentation()
                     .description(apiExternalDocDesc)
                     .url(apiExternalDocUrl));
-  }
-
-  private final ProductCompositeIntegration integration;
-
-  @Autowired
-  public ProductCompositeServiceApplication(
-          ProductCompositeIntegration integration
-  ) {
-    this.integration = integration;
-  }
-
-  @Bean
-  ReactiveHealthContributor coreServices() {
-
-    final Map<String, ReactiveHealthIndicator> registry = new LinkedHashMap<>();
-
-    registry.put("product", integration::getProductHealth);
-    registry.put("recommendation", integration::getRecommendationHealth);
-    registry.put("review", integration::getReviewHealth);
-
-    return CompositeReactiveHealthContributor.fromMap(registry);
   }
 
   @Bean
