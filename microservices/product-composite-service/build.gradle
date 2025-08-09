@@ -14,7 +14,7 @@ java {
 }
 
 ext {
-    set('springCloudVersion', "2025.1.0-M1")
+    springCloudVersion = "2025.0.0"
 }
 
 repositories {
@@ -39,6 +39,24 @@ dependencies {
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 }
 
+/*
+    Spring Cloud - Spring boot 간에는 호환되는 버전이 있으며 그걸 맞춰 주어야 작동한다
+
+    버전이 맞지 않는 경우
+    Spring Boot [3.5.3] is not compatible with this Spring Cloud release train
+    Could not find class [org.springframework.boot.thread.Threading]
+    오류가 발생한다
+
+    [호환되는 버전 정보]
+    | Spring Boot | Spring Cloud |
+    | 3.5.x       | 2025.0.0     |
+    | 3.3.x       | 2023.0.x     |
+    | 3.2.x       | 2023.0.x     |
+    | 3.1.x       | 2022.0.x     |
+
+    2025-08-09 현재 Spring Cloud 최신 버전은 2025.1.0-M1 인데 이는 Spring Boot 4.0.0-M1 과 매치가 된다
+    Spring boot 3.5.x 의 경우 2025.0.0 과 호환된다 2025.1.0-M1 과는 호환이 되지 않으니 주의
+ */
 dependencyManagement {
     imports {
         mavenBom "org.springframework.cloud:spring-cloud-dependencies:${springCloudVersion}"
