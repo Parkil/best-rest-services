@@ -130,6 +130,10 @@ spring.cloud.stream.kafka.binder.brokers: kafka
 ---
 spring.config.activate.on-profile: streaming_partitioned
 
+# 책에서는 순서대로 message 를 받기 위해서 partition 을 쓴다고 했지만
+# 실질적으로는 partitionKey 가 uniqueKey(productId, recommendId, reviewId) 인 만큼 1 파티션에서
+# product 생성시에는 무조건 partition에는 1개의 message 만 존재(파티션 키가 unique 값이니까)
+# 하기 때문에 순서대로 처리가 되는게 아닌가 하는 생각이 든다. message 자체는 순서보장이 안되는 듯
 spring.cloud.stream.bindings.products-out-0.producer:
   partition-key-expression: headers['partitionKey']
   partition-count: 2

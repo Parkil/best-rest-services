@@ -78,7 +78,7 @@ public class ProductCompositeIntegration implements ProductService, Recommendati
     String url = PRODUCT_SERVICE_URL + "/product/" + productId;
     LOG.debug("Will call the getProduct API on URL: {}", url);
 
-    return webClient.get().uri(url).retrieve().bodyToMono(Product.class).log(LOG.getName(), FINE).onErrorMap(WebClientResponseException.class, ex -> handleException(ex));
+    return webClient.get().uri(url).retrieve().bodyToMono(Product.class).log(LOG.getName(), FINE).onErrorMap(WebClientResponseException.class, this::handleException);
   }
 
 
@@ -166,8 +166,8 @@ public class ProductCompositeIntegration implements ProductService, Recommendati
   }
 
   private void sendMessage(String bindingName, Event<Integer, ?> event) {
-    LOG.debug("Sending a {} message to {}", event.getEventType(), bindingName);
-    Message message = MessageBuilder.withPayload(event)
+    LOG.debug("Sending a {} message to {}. eventKey : {}", event.getEventType(), bindingName, event.getKey());
+    Message<? extends Event<Integer, ?>> message = MessageBuilder.withPayload(event)
             .setHeader("partitionKey", event.getKey())
             .build();
     streamBridge.send(bindingName, message);
