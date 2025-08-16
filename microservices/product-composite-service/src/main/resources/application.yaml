@@ -3,6 +3,10 @@ springdoc:
   api-docs.path: /openapi/v3/api-docs
   packagesToScan: se.magnus.microservices.composite.product
   pathsToMatch: /**
+  cache.disabled: true
+
+# gateway 를 거쳐서 swagger 에 접근하는 경우 product-composite 서비스의 url 을 에지서버의 url 로 대체
+server.forward-headers-strategy: framework
 
 api:
 
