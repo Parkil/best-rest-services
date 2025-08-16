@@ -1,24 +1,28 @@
 package se.magnus.springcloud.gateway;
 
-import static java.util.logging.Level.FINE;
-
-import java.util.LinkedHashMap;
-import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.actuate.health.*;
+import org.springframework.boot.actuate.health.CompositeReactiveHealthContributor;
+import org.springframework.boot.actuate.health.Health;
+import org.springframework.boot.actuate.health.ReactiveHealthContributor;
+import org.springframework.boot.actuate.health.ReactiveHealthIndicator;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
+
+import java.util.LinkedHashMap;
+import java.util.Map;
+
+import static java.util.logging.Level.FINE;
 
 @Configuration
 public class HealthCheckConfiguration {
 
   private static final Logger LOG = LoggerFactory.getLogger(HealthCheckConfiguration.class);
 
-  private WebClient webClient;
+  private final WebClient webClient;
 
   @Autowired
   public HealthCheckConfiguration(WebClient.Builder webClientBuilder) {
