@@ -65,7 +65,11 @@ public class ProductCompositeServiceApplication {
   }
 
   /*
-    아직 명확하지는 않지만, @LoadBalanced 어노테이션이 지정되면, Spring cloud 에서
+    아직 명확하지는 않지만, @LoadBalanced 어노테이션이 지정되면, Spring cloud 검색 서비스
+    에서 서비스를 검색해서 http url, port 를 매핑해주는듯
+    docker 상에서 product, recommendation, review 포트는 8080인데 ProductCompositeIntegration 에서는
+    http://product 로 호출하고 이게 작동하는게 이상했는데 spring cloud 검색 서비스 (현재는 eureka)
+    가 port 까지 같이 mapping 을 해주는 듯
    */
   @Bean
   @LoadBalanced
