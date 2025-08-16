@@ -8,8 +8,10 @@ import io.swagger.v3.oas.models.info.License;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.cloud.client.loadbalancer.LoadBalanced;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
+import org.springframework.web.reactive.function.client.WebClient;
 
 @SpringBootApplication
 @ComponentScan("se.magnus")
@@ -60,6 +62,15 @@ public class ProductCompositeServiceApplication {
             .externalDocs(new ExternalDocumentation()
                     .description(apiExternalDocDesc)
                     .url(apiExternalDocUrl));
+  }
+
+  /*
+    아직 명확하지는 않지만, @LoadBalanced 어노테이션이 지정되면, Spring cloud 에서
+   */
+  @Bean
+  @LoadBalanced
+  public WebClient.Builder loadBalancedWebClientBuilder() {
+    return WebClient.builder();
   }
 
   public static void main(String[] args) {
