@@ -34,8 +34,12 @@ import se.magnus.api.core.review.Review;
 import se.magnus.api.event.Event;
 
 @SpringBootTest(
-  webEnvironment = RANDOM_PORT,
-  properties = {"spring.main.allow-bean-definition-overriding=true", "eureka.client.enabled=false"})
+        webEnvironment = RANDOM_PORT,
+        classes = {TestSecurityConfig.class},
+        properties = {
+                "spring.security.oauth2.resourceserver.jwt.issuer-uri=",
+                "spring.main.allow-bean-definition-overriding=true",
+                "eureka.client.enabled=false"})
 @Import({TestChannelBinderConfiguration.class}) // OutputDestination 을 사용하려면 추가로 정의해야 함
 class MessagingTests {
 

@@ -2,12 +2,19 @@ package se.magnus.microservices.composite.product.services;
 
 import static java.util.logging.Level.FINE;
 
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.context.ReactiveSecurityContextHolder;
+import org.springframework.security.core.context.SecurityContext;
+import org.springframework.security.core.context.SecurityContextImpl;
+import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.web.bind.annotation.RestController;
 import reactor.core.publisher.Mono;
 import se.magnus.api.composite.product.*;
@@ -20,6 +27,7 @@ import se.magnus.util.http.ServiceUtil;
 public class ProductCompositeServiceImpl implements ProductCompositeService {
 
   private static final Logger LOG = LoggerFactory.getLogger(ProductCompositeServiceImpl.class);
+  private final SecurityContext nullSecCtx = new SecurityContextImpl();
 
   private final ServiceUtil serviceUtil;
   private final ProductCompositeIntegration integration;
@@ -36,6 +44,7 @@ public class ProductCompositeServiceImpl implements ProductCompositeService {
     try {
 
       List<Mono> monoList = new ArrayList<>();
+      monoList.add(getLogAuthorizationInfoMono());
 
       LOG.debug("createCompositeProduct: creates a new composite entity for productId: {}", body.getProductId());
 
@@ -80,6 +89,7 @@ public class ProductCompositeServiceImpl implements ProductCompositeService {
                             (List<Review>) values[2],
                             serviceUtil.getServiceAddress()
                     ),
+                    getSecurityContextMono(),
                     integration.getProduct(productId),
                     integration.getRecommendations(productId).collectList(),
                     integration.getReviews(productId).collectList())
@@ -96,6 +106,7 @@ public class ProductCompositeServiceImpl implements ProductCompositeService {
 
       return Mono.zip(
                       r -> "",
+                      getLogAuthorizationInfoMono(),
                       integration.deleteProduct(productId),
                       integration.deleteRecommendations(productId),
                       integration.deleteReviews(productId))
@@ -122,7 +133,7 @@ public class ProductCompositeServiceImpl implements ProductCompositeService {
                     .collect(Collectors.toList());
 
     // 3. Copy summary review info, if available
-    List<ReviewSummary> reviewSummaries = (reviews == null)  ? null :
+    List<ReviewSummary> reviewSummaries = (reviews == null) ? null :
             reviews.stream()
                     .map(r -> new ReviewSummary(r.getReviewId(), r.getAuthor(), r.getSubject(), r.getContent()))
                     .collect(Collectors.toList());
@@ -134,5 +145,38 @@ public class ProductCompositeServiceImpl implements ProductCompositeService {
     ServiceAddresses serviceAddresses = new ServiceAddresses(serviceAddress, productAddress, reviewAddress, recommendationAddress);
 
     return new ProductAggregate(productId, name, weight, recommendationSummaries, reviewSummaries, serviceAddresses);
+  }
+
+  private Mono<SecurityContext> getLogAuthorizationInfoMono() {
+    return getSecurityContextMono().doOnNext(this::logAuthorizationInfo);
+  }
+
+  private Mono<SecurityContext> getSecurityContextMono() {
+    return ReactiveSecurityContextHolder.getContext().defaultIfEmpty(nullSecCtx);
+  }
+
+  private void logAuthorizationInfo(SecurityContext sc) {
+    if (sc != null && sc.getAuthentication() != null && sc.getAuthentication() instanceof JwtAuthenticationToken) {
+      Jwt jwtToken = ((JwtAuthenticationToken) sc.getAuthentication()).getToken();
+      logAuthorizationInfo(jwtToken);
+    } else {
+      LOG.warn("No JWT based Authentication supplied, running tests are we?");
+    }
+  }
+
+  private void logAuthorizationInfo(Jwt jwt) {
+    if (jwt == null) {
+      LOG.warn("No JWT supplied, running tests are we?");
+    } else {
+      if (LOG.isDebugEnabled()) {
+        URL issuer = jwt.getIssuer();
+        List<String> audience = jwt.getAudience();
+        Object subject = jwt.getClaims().get("sub");
+        Object scopes = jwt.getClaims().get("scope");
+        Object expires = jwt.getClaims().get("exp");
+
+        LOG.debug("Authorization info: Subject: {}, scopes: {}, expires {}: issuer: {}, audience: {}", subject, scopes, expires, issuer, audience);
+      }
+    }
   }
 }

@@ -92,6 +92,11 @@ public class AuthorizationServerConfig {
   @Bean
   public RegisteredClientRepository registeredClientRepository() {
 
+    /*
+    OAuth - 권한 부여 서버에서 scope 를 설정하면 인증성공시 Access Token 에 지정한 scope 가 실려서
+    반환이 되고 해당 access token 을 이용하여 url 호출시 scope 체크는 spring security 에서 알아서
+    해주는 건가 아니면 코드로 따로 구현을 해야 하는 건가?
+     */
     LOG.info("register OAuth client allowing all grant flows...");
     RegisteredClient writerClient = RegisteredClient.withId(UUID.randomUUID().toString())
             .clientId("writer")
