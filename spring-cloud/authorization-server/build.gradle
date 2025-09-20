@@ -1,0 +1,58 @@
+plugins {
+    id 'java'
+    id 'org.springframework.boot' version '3.5.3'
+    id 'io.spring.dependency-management' version '1.1.7'
+}
+
+group = 'se.magnus.springcloud'
+version = '0.0.1-SNAPSHOT'
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(21)
+    }
+}
+
+repositories {
+    mavenCentral()
+}
+
+ext {
+    springCloudVersion = "2025.0.0"
+}
+
+/*
+    OAuth
+    OAuth - 권한위임을 위한 공개 표준
+
+    권한위임?
+    - 사용자에게 권한을 위임받은 서드파티 클라이언트 app 이 사용자를 대신해서 보안 리소스에 접근 가능
+
+    클라이언트 - 사용자의 권한을 위임받아서 보안 API 를 호출하는 app
+    자원서버 - 보호 대상 자원에 대한 API 를 제공하는 서버
+    권한 부여 서버 - 자원소유자를 인증하고 자원소유자의 승인을 받아서 클라이언트에게 token 을 발급
+    ID 공급자 - 사용자 정보 관리 및 사용자 인증
+
+    권한 부여 서버에 등록된 클라이언트는 client ID, secret 을 발급받는다, 클라이언트는 권한부여서버에 redirect URI 를 등록하고
+    권한 부여서버는 ID 공급자에서 사용자가 인증되면 권한코드+token 을 redirect URI 에 전달한다
+
+    spring-security-oauth2-authorization-server 는 spring 환경에서 사용할 수 있는 오픈소스 권한 부여 서버
+ */
+dependencies {
+    implementation 'org.springframework.boot:spring-boot-starter-web'
+    implementation 'org.springframework.boot:spring-boot-starter-actuator'
+    implementation 'org.springframework.boot:spring-boot-starter-security'
+    implementation 'org.springframework.cloud:spring-cloud-starter-netflix-eureka-client'
+    implementation 'org.springframework.security:spring-security-oauth2-authorization-server'
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+}
+
+dependencyManagement {
+    imports {
+        mavenBom "org.springframework.cloud:spring-cloud-dependencies:${springCloudVersion}"
+    }
+}
+
+test {
+    useJUnitPlatform()
+}
