@@ -96,11 +96,14 @@ public class AuthorizationServerConfig {
     OAuth - 권한 부여 서버에서 scope 를 설정하면 인증성공시 Access Token 에 지정한 scope 가 실려서
     반환이 되고 해당 access token 을 이용하여 url 호출시 scope 체크는 spring security 에서 알아서
     해주는 건가 아니면 코드로 따로 구현을 해야 하는 건가?
+
+    readerClient, writerClient 가 동일한 평문 clientSecret 를 사용하는 경우 Registered client must be unique 오류가 발생한다
+    encoding 된 secret 을 이용하면 문제가 없다고는 하는데 이부분 관련해서는 추가적인 확인이 필요
      */
     LOG.info("register OAuth client allowing all grant flows...");
     RegisteredClient writerClient = RegisteredClient.withId(UUID.randomUUID().toString())
             .clientId("writer")
-            .clientSecret("{noop}secret")  // {noop} prefix for plain text password
+            .clientSecret("{noop}secret-writer")  // {noop} prefix for plain text password
             .clientAuthenticationMethod(ClientAuthenticationMethod.CLIENT_SECRET_BASIC)
             .authorizationGrantType(AuthorizationGrantType.AUTHORIZATION_CODE)
             .authorizationGrantType(AuthorizationGrantType.REFRESH_TOKEN)
@@ -120,7 +123,7 @@ public class AuthorizationServerConfig {
 
     RegisteredClient readerClient = RegisteredClient.withId(UUID.randomUUID().toString())
             .clientId("reader")
-            .clientSecret("{noop}secret")  // {noop} prefix for plain text password
+            .clientSecret("{noop}secret-reader")  // {noop} prefix for plain text password
             .clientAuthenticationMethod(ClientAuthenticationMethod.CLIENT_SECRET_BASIC)
             .authorizationGrantType(AuthorizationGrantType.AUTHORIZATION_CODE)
             .authorizationGrantType(AuthorizationGrantType.REFRESH_TOKEN)
