@@ -16,6 +16,7 @@
  */
 package sample;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -25,6 +26,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.web.servlet.MockMvc;
+
+import java.util.Base64;
 
 /**
  * Tests for {@link OAuth2AuthorizationServerApplication}.
@@ -40,11 +43,15 @@ class OAuth2AuthorizationServerApplicationTests {
 
   @Test
   void requestTokenUsingClientCredentialsGrantType() throws Exception {
+      String clientId = "reader";
+      String clientSecret = "secret-reader";  // 또는 "secret-reader"로 변경
+      String credentials = clientId + ":" + clientSecret;
+      String encodedCredentials = Base64.getEncoder().encodeToString(credentials.getBytes(UTF_8));
 
-    this.mvc.perform(post("/oauth2/token")
-      .param("grant_type", "client_credentials")
-      .header("Authorization", "Basic cmVhZGVyOnNlY3JldA=="))
-        .andExpect(status().isOk());
+      this.mvc.perform(post("/oauth2/token")
+                      .param("grant_type", "client_credentials")
+                      .header("Authorization", "Basic " + encodedCredentials))
+              .andExpect(status().isOk());
   }
 
   @Test

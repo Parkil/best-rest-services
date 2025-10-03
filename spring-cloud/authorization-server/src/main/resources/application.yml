@@ -24,6 +24,8 @@ management.endpoints.web.exposure.include: "*"
 logging:
   level:
     root: INFO
+    org.springframework.security: DEBUG
+    org.springframework.security.oauth2: DEBUG
 
 ---
 spring.config.activate.on-profile: docker

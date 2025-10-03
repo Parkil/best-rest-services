@@ -103,11 +103,11 @@ public class AuthorizationServerConfig {
     LOG.info("register OAuth client allowing all grant flows...");
     RegisteredClient writerClient = RegisteredClient.withId(UUID.randomUUID().toString())
             .clientId("writer")
-            .clientSecret("{noop}secret-writer")  // {noop} prefix for plain text password
+            .clientSecret("{noop}secret-writer")  // {noop} prefix for plain text password 여기 설정된 게 Basic cmVhZGVyOnNlY3JldA== 데이터와 일치 해야 함
             .clientAuthenticationMethod(ClientAuthenticationMethod.CLIENT_SECRET_BASIC)
+            .authorizationGrantType(AuthorizationGrantType.CLIENT_CREDENTIALS)
             .authorizationGrantType(AuthorizationGrantType.AUTHORIZATION_CODE)
             .authorizationGrantType(AuthorizationGrantType.REFRESH_TOKEN)
-            .authorizationGrantType(AuthorizationGrantType.CLIENT_CREDENTIALS)
             .redirectUri("https://my.redirect.uri")
             .redirectUri("https://localhost:8443/webjars/swagger-ui/oauth2-redirect.html")
             .scope(OidcScopes.OPENID)
@@ -125,9 +125,9 @@ public class AuthorizationServerConfig {
             .clientId("reader")
             .clientSecret("{noop}secret-reader")  // {noop} prefix for plain text password
             .clientAuthenticationMethod(ClientAuthenticationMethod.CLIENT_SECRET_BASIC)
+            .authorizationGrantType(AuthorizationGrantType.CLIENT_CREDENTIALS)
             .authorizationGrantType(AuthorizationGrantType.AUTHORIZATION_CODE)
             .authorizationGrantType(AuthorizationGrantType.REFRESH_TOKEN)
-            .authorizationGrantType(AuthorizationGrantType.CLIENT_CREDENTIALS)
             .redirectUri("https://my.redirect.uri")
             .redirectUri("https://localhost:8443/webjars/swagger-ui/oauth2-redirect.html")
             .scope(OidcScopes.OPENID)
