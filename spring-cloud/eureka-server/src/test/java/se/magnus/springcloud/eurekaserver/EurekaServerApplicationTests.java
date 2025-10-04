@@ -13,11 +13,7 @@ import org.springframework.http.ResponseEntity;
 
 @SpringBootTest(webEnvironment = RANDOM_PORT)
 class EurekaServerApplicationTests {
-
-  @Test
-  void contextLoads() {
-  }
-
+  //@Value 의 주입시점은 생성자/필드/setter 메서드 호출 시점
   @Value("${app.eureka-username}")
   private String username;
 
@@ -25,17 +21,20 @@ class EurekaServerApplicationTests {
   private String password;
 
   @Autowired
-  void setTestRestTemplate(TestRestTemplate testRestTemplate) {
-    this.testRestTemplate = testRestTemplate.withBasicAuth(username, password);
-  }
-
   private TestRestTemplate testRestTemplate;
 
   @Test
-  void catalogLoads() {
+  void contextLoads() {
+  }
 
+  @Test
+  void catalogLoads() {
     String expectedResponseBody = "{\"applications\":{\"versions__delta\":\"1\",\"apps__hashcode\":\"\",\"application\":[]}}";
-    ResponseEntity<String> entity = testRestTemplate.getForEntity("/eureka/apps", String.class);
+
+    // Basic Authentication을 적용한 TestRestTemplate 사용
+    TestRestTemplate authenticatedTemplate = testRestTemplate.withBasicAuth(username, password);
+    ResponseEntity<String> entity = authenticatedTemplate.getForEntity("/eureka/apps", String.class);
+
     assertEquals(HttpStatus.OK, entity.getStatusCode());
     assertEquals(expectedResponseBody, entity.getBody());
   }
@@ -43,7 +42,8 @@ class EurekaServerApplicationTests {
   @Test
   void healthy() {
     String expectedResponseBody = "{\"status\":\"UP\"}";
-    ResponseEntity<String> entity = testRestTemplate.getForEntity("/actuator/health", String.class);
+    TestRestTemplate authenticatedTemplate = testRestTemplate.withBasicAuth(username, password);
+    ResponseEntity<String> entity = authenticatedTemplate.getForEntity("/actuator/health", String.class);
     assertEquals(HttpStatus.OK, entity.getStatusCode());
     assertEquals(expectedResponseBody, entity.getBody());
   }
