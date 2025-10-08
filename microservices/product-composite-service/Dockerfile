@@ -1,4 +1,4 @@
-FROM alpine/jdk21 as builder
+FROM alpine/jre21 as builder
 WORKDIR extracted
 ADD ./build/libs/product-composite-service-0.0.1-SNAPSHOT.jar app.jar
 RUN java -Djarmode=layertools -jar app.jar extract

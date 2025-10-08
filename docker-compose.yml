@@ -73,37 +73,52 @@ services:
     image: rabbitmq:3.8.11-management
     mem_limit: 512m
     ports:
-      - 5672:5672
-      - 15672:15672
+      - "5672:5672"
+      - "15672:15672"
     healthcheck:
       test: ["CMD", "rabbitmqctl", "status"]
       interval: 5s
       timeout: 2s
       retries: 60
 
+  # auth 가 설정되어 있기 깨문에 단순 http://localhost:8761/actuator/health 호출 은 401이 발생한다
   eureka:
     build: spring-cloud/eureka-server
     mem_limit: 512m
+#    healthcheck:
+#      test: [ "CMD", "curl", "-fs", "http://localhost:8761/actuator/health" ]
+#      interval: 5s
+#      timeout: 2s
+#      retries: 60
 
   # docker compose 설정 시 keystore / password 지정, application.yml 에 설정된 경로를 override 가능
   # 설마 server.ssl.key-store 라서 environment 가SERVER_SSL_KEY_STORE 인건가?
+  # SERVER_SSL_KEY_STORE 의 경우 host 서버 경로를 지정해야 함 주의
+  # docker-compose up gateway - gateway 만 실행
   gateway:
     environment:
       - SPRING_PROFILES_ACTIVE=docker
-      - SERVER_SSL_KEY_STORE=file:/keystore/edge.p12
-      - SERVER_SSL_KEY_STORE_PASSWORD=password
+#      - SERVER_SSL_KEY_STORE=file:/keystore/edge.p12
+#      - SERVER_SSL_KEY_STORE_PASSWORD=password
     build: spring-cloud/gateway
     mem_limit: 512m
     ports:
-      - "8080:8080"
+      - "8443:8443"
+    depends_on:
+      auth-server:
+        condition: service_healthy
 
   auth-server:
     environment:
       - SPRING_PROFILES_ACTIVE=docker
     build: spring-cloud/authorization-server
     mem_limit: 512m
+#    depends_on:
+#      eureka:
+#        condition: service_healthy
     healthcheck:
-      test: [ "CMD", "curl", "-fs", "http://localhost:9999/actuator/health" ]
+      test: ["CMD", "curl", "-fs", "http://localhost:9999/actuator/health"]
+#      start_period: 10s
       interval: 5s
       timeout: 2s
       retries: 60

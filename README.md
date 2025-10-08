@@ -4,9 +4,6 @@
  docker buildx build -t alpine/jre21 -f .\Dockerfile_alpine_jre21 .
 ```
 
-```script
- docker buildx build -t alpine/jdk21 -f .\Dockerfile_alpine_jdk21 .
-```
 
 ### 주의사항
 1.신규 모듈을 만들면 settings.gradle 에 추가 하고
@@ -27,3 +24,21 @@ windows 에서 이 소스를 돌리려면 Docker Desktop or Rancher Desktop 을 
 괜히 프로그램 하나더 설치하는게 싫어서 WSL 에 docker, docker-compose 를 설치하고 JetBrain Gateway 를 이용해서 WSL 환경에 
 원격으로 붙는 방식으로 처리함
 
+### 실행 스크립트
+
+해당 샘플코드에서는 java build, docker image build, run 이 다 분리되어 있으므로 별개의 명령어로 실행
+
+##### java 프로젝트 build
+```bash
+./gradlew build
+```
+
+##### docker image 생성
+```bash
+docker-compose build
+```
+
+##### docker run
+```bash
+docker-compose up -d
+```
