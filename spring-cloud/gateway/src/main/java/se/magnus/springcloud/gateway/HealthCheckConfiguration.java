@@ -7,6 +7,7 @@ import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.actuate.health.*;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -20,6 +21,13 @@ public class HealthCheckConfiguration {
 
   private final WebClient webClient;
 
+  @Value("${spring.security.oauth2.resourceserver.jwt.issuer-uri}")
+  private String issuerUri;
+
+  @Value("${app.eureka-server}")
+  private String appEurekaServer;
+
+
   @Autowired
   public HealthCheckConfiguration(WebClient.Builder webClientBuilder) {
     this.webClient = webClientBuilder.build();
@@ -27,6 +35,8 @@ public class HealthCheckConfiguration {
 
   @Bean
   ReactiveHealthContributor healthcheckMicroservices() {
+    LOG.info("issuerUri : {}", issuerUri);
+    LOG.info("appEurekaServer : {}", appEurekaServer);
 
     final Map<String, ReactiveHealthIndicator> registry = new LinkedHashMap<>();
 
