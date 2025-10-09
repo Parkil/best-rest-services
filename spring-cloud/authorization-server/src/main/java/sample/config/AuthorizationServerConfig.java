@@ -25,22 +25,15 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.http.MediaType;
-import org.springframework.security.config.Customizer;
-import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.oauth2.core.AuthorizationGrantType;
 import org.springframework.security.oauth2.core.ClientAuthenticationMethod;
 import org.springframework.security.oauth2.core.oidc.OidcScopes;
 import org.springframework.security.oauth2.server.authorization.client.InMemoryRegisteredClientRepository;
 import org.springframework.security.oauth2.server.authorization.client.RegisteredClient;
 import org.springframework.security.oauth2.server.authorization.client.RegisteredClientRepository;
-import org.springframework.security.oauth2.server.authorization.config.annotation.web.configurers.OAuth2AuthorizationServerConfigurer;
 import org.springframework.security.oauth2.server.authorization.settings.AuthorizationServerSettings;
 import org.springframework.security.oauth2.server.authorization.settings.ClientSettings;
 import org.springframework.security.oauth2.server.authorization.settings.TokenSettings;
-import org.springframework.security.web.SecurityFilterChain;
-import org.springframework.security.web.authentication.LoginUrlAuthenticationEntryPoint;
-import org.springframework.security.web.util.matcher.MediaTypeRequestMatcher;
 import sample.jose.Jwks;
 
 import java.time.Duration;
@@ -54,29 +47,6 @@ import java.util.UUID;
 public class AuthorizationServerConfig {
 
   private static final Logger LOG = LoggerFactory.getLogger(AuthorizationServerConfig.class);
-
-  // /.well-known/openid-configuration , /.well-known/oauth-authorization-server, /.well-known/jwks.json URL 활성화,
-  @Bean
-  public SecurityFilterChain authorizationServerSecurityFilterChain(HttpSecurity http) throws Exception {
-    OAuth2AuthorizationServerConfigurer authorizationServerConfigurer =
-            OAuth2AuthorizationServerConfigurer.authorizationServer();
-
-    http
-            .securityMatcher(authorizationServerConfigurer.getEndpointsMatcher())
-            .with(authorizationServerConfigurer, authorizationServer ->
-                    authorizationServer.oidc(Customizer.withDefaults()) // Enable OpenID Connect 1.0
-            )
-            .authorizeHttpRequests((authorize) -> authorize.anyRequest().authenticated())
-            .exceptionHandling((exceptions) ->
-                    exceptions.defaultAuthenticationEntryPointFor(
-                            new LoginUrlAuthenticationEntryPoint("/login"),
-                            new MediaTypeRequestMatcher(MediaType.TEXT_HTML)
-                    )
-            )
-            .oauth2ResourceServer(resourceServer -> resourceServer.jwt(Customizer.withDefaults()));
-
-    return http.build();
-  }
 
   // @formatter:off
   @Bean

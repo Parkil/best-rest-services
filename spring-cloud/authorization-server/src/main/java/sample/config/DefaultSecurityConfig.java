@@ -19,7 +19,7 @@ package sample.config;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Bean;
-import org.springframework.core.annotation.Order;
+import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.core.userdetails.User;
@@ -35,20 +35,27 @@ import static org.springframework.security.config.Customizer.withDefaults;
  * @since 0.1.0
  */
 @EnableWebSecurity
+@Configuration
 public class DefaultSecurityConfig {
 
   private static final Logger LOG = LoggerFactory.getLogger(DefaultSecurityConfig.class);
 
   // formatter:off
   @Bean
-  @Order(2)
   SecurityFilterChain defaultSecurityFilterChain(HttpSecurity http) throws Exception {
+    LOG.info("defaultSecurityFilterChain Bean created");
     http
             .authorizeHttpRequests(authorizeHttpRequests -> authorizeHttpRequests
                     .requestMatchers("/actuator/**").permitAll()
+                    .requestMatchers("/oauth2/**").permitAll()
+                    .requestMatchers("/.well-known/**").permitAll()
                     .anyRequest().authenticated()
             )
-            .formLogin(withDefaults());
+            .formLogin(withDefaults())
+            .csrf(csrf -> csrf
+              .ignoringRequestMatchers("/oauth2/token", "/oauth2/introspect", "/oauth2/revoke")
+            );
+
     return http.build();
   }
   // formatter:on
@@ -56,6 +63,7 @@ public class DefaultSecurityConfig {
   // @formatter:off
   @Bean
   UserDetailsService users() {
+    LOG.info("users Bean created");
     UserDetails user = User.builder()
             .username("u")
             .password("p")
