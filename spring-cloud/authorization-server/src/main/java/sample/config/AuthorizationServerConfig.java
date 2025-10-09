@@ -21,13 +21,10 @@ import com.nimbusds.jose.jwk.RSAKey;
 import com.nimbusds.jose.jwk.source.ImmutableJWKSet;
 import com.nimbusds.jose.jwk.source.JWKSource;
 import com.nimbusds.jose.proc.SecurityContext;
-import java.time.Duration;
-import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.core.annotation.Order;
 import org.springframework.http.MediaType;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -46,6 +43,9 @@ import org.springframework.security.web.authentication.LoginUrlAuthenticationEnt
 import org.springframework.security.web.util.matcher.MediaTypeRequestMatcher;
 import sample.jose.Jwks;
 
+import java.time.Duration;
+import java.util.UUID;
+
 /**
  * @author Joe Grandja
  * @since 0.0.1
@@ -55,8 +55,8 @@ public class AuthorizationServerConfig {
 
   private static final Logger LOG = LoggerFactory.getLogger(AuthorizationServerConfig.class);
 
+  // /.well-known/openid-configuration , /.well-known/oauth-authorization-server, /.well-known/jwks.json URL 활성화,
   @Bean
-  @Order(1)
   public SecurityFilterChain authorizationServerSecurityFilterChain(HttpSecurity http) throws Exception {
     OAuth2AuthorizationServerConfigurer authorizationServerConfigurer =
             OAuth2AuthorizationServerConfigurer.authorizationServer();
@@ -74,16 +74,6 @@ public class AuthorizationServerConfig {
                     )
             )
             .oauth2ResourceServer(resourceServer -> resourceServer.jwt(Customizer.withDefaults()));
-
-    return http.build();
-  }
-
-  @Bean
-  @Order(2)
-  public SecurityFilterChain defaultSecurityFilterChain(HttpSecurity http) throws Exception {
-    http
-            .authorizeHttpRequests((authorize) -> authorize.anyRequest().authenticated())
-            .formLogin(Customizer.withDefaults());
 
     return http.build();
   }
