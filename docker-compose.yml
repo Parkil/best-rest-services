@@ -85,11 +85,7 @@ services:
   eureka:
     build: spring-cloud/eureka-server
     mem_limit: 512m
-#    healthcheck:
-#      test: [ "CMD", "curl", "-fs", "http://localhost:8761/actuator/health" ]
-#      interval: 5s
-#      timeout: 2s
-#      retries: 60
+
 
   # docker compose 설정 시 keystore / password 지정, application.yml 에 설정된 경로를 override 가능
   # 설마 server.ssl.key-store 라서 environment 가SERVER_SSL_KEY_STORE 인건가?
@@ -98,8 +94,6 @@ services:
   gateway:
     environment:
       - SPRING_PROFILES_ACTIVE=docker
-#      - SERVER_SSL_KEY_STORE=file:/keystore/edge.p12
-#      - SERVER_SSL_KEY_STORE_PASSWORD=password
     build: spring-cloud/gateway
     mem_limit: 512m
     ports:
@@ -113,12 +107,9 @@ services:
       - SPRING_PROFILES_ACTIVE=docker
     build: spring-cloud/authorization-server
     mem_limit: 512m
-#    depends_on:
-#      eureka:
-#        condition: service_healthy
+
     healthcheck:
-      test: ["CMD", "curl", "-fs", "http://localhost:9999/actuator/health"]
-#      start_period: 10s
+      test: ["CMD", "curl", "-f", "http://localhost:9999/actuator/health"]
       interval: 5s
       timeout: 2s
       retries: 60
