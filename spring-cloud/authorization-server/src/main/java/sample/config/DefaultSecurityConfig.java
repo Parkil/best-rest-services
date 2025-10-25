@@ -42,6 +42,7 @@ public class DefaultSecurityConfig {
   private static final Logger LOG = LoggerFactory.getLogger(DefaultSecurityConfig.class);
 
   // formatter:off
+  // oAuth 를 제외한 나머지 url 에 대한 보안 설정을 여기서 담당
   @Bean
   @Order(2)
   SecurityFilterChain defaultSecurityFilterChain(HttpSecurity http) throws Exception {
@@ -49,15 +50,9 @@ public class DefaultSecurityConfig {
     http
             .authorizeHttpRequests(authorizeHttpRequests -> authorizeHttpRequests
                     .requestMatchers("/actuator/**").permitAll()
-                    .requestMatchers("/oauth2/**").permitAll()
-                    .requestMatchers("/.well-known/**").permitAll()
                     .anyRequest().authenticated()
             )
-            .formLogin(withDefaults())
-            .csrf(csrf -> csrf
-              .ignoringRequestMatchers("/oauth2/token", "/oauth2/introspect", "/oauth2/revoke")
-            );
-
+            .formLogin(withDefaults());
     return http.build();
   }
   // formatter:on

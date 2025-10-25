@@ -86,7 +86,9 @@ public class AuthorizationServerConfig {
    * - 이 체인은 Spring Authorization Server가 제공하는 엔드포인트(/oauth2/**, OIDC 관련 엔드포인트 등)에만
    *   적용되도록 범위를 한정하고, 해당 요청은 인증을 요구합니다.
    * - 인증되지 않은 접근은 /login 으로 리다이렉트되며, CSRF 는 해당 엔드포인트에서만 비활성화합니다.
-   * - @Order(1) 로 기본 보안 체인(@Order(2))보다 먼저 적용되어 권한 부여 서버 엔드포인트가 올바르게 동작합니다.
+   * - @Order(1) 로 기본 보안 체인(@Order(2))보다 먼저 적용되어 권한 부여 서버 엔드포인트가 올바르게 동작합니다.\
+   * -> oAuth2 관련된 모든 url(/oauth2/authorize,/oauth2/token, /.well-known/openid-configuration.. ) 설정은 
+   * 여기서 한다
    */
   @Bean
   @Order(1)
