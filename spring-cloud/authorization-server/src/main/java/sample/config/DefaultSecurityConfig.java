@@ -20,6 +20,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.annotation.Order;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.core.userdetails.User;
@@ -42,6 +43,7 @@ public class DefaultSecurityConfig {
 
   // formatter:off
   @Bean
+  @Order(2)
   SecurityFilterChain defaultSecurityFilterChain(HttpSecurity http) throws Exception {
     LOG.info("defaultSecurityFilterChain Bean created");
     http
@@ -66,7 +68,7 @@ public class DefaultSecurityConfig {
     LOG.info("users Bean created");
     UserDetails user = User.builder()
             .username("u")
-            .password("p")
+            .password("{noop}p") // Password Encoder 를 설정하지 않은 상태에서 password 를 지정하고자 하는 경우 {noop}를 반드시 붙여주어야 함
             .roles("USER")
             .build();
     return new InMemoryUserDetailsManager(user);

@@ -25,15 +25,22 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.annotation.Order;
+import org.springframework.security.config.Customizer;
+import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.oauth2.core.AuthorizationGrantType;
 import org.springframework.security.oauth2.core.ClientAuthenticationMethod;
 import org.springframework.security.oauth2.core.oidc.OidcScopes;
 import org.springframework.security.oauth2.server.authorization.client.InMemoryRegisteredClientRepository;
 import org.springframework.security.oauth2.server.authorization.client.RegisteredClient;
 import org.springframework.security.oauth2.server.authorization.client.RegisteredClientRepository;
+import org.springframework.security.oauth2.server.authorization.config.annotation.web.configurers.OAuth2AuthorizationServerConfigurer;
 import org.springframework.security.oauth2.server.authorization.settings.AuthorizationServerSettings;
 import org.springframework.security.oauth2.server.authorization.settings.ClientSettings;
 import org.springframework.security.oauth2.server.authorization.settings.TokenSettings;
+import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.LoginUrlAuthenticationEntryPoint;
+import org.springframework.security.web.util.matcher.RequestMatcher;
 import sample.jose.Jwks;
 
 import java.time.Duration;
@@ -47,6 +54,66 @@ import java.util.UUID;
 public class AuthorizationServerConfig {
 
   private static final Logger LOG = LoggerFactory.getLogger(AuthorizationServerConfig.class);
+
+
+  /**
+   * Authorization Server security filter chain for Spring Authorization Server endpoints.
+   * <p></p>
+   * What it does
+   * - Scopes this filter chain only to the Authorization Server endpoints using the
+   *   endpoints matcher from OAuth2AuthorizationServerConfigurer (e.g. /oauth2/authorize,
+   *   /oauth2/token, OIDC endpoints like /.well-known/openid-configuration, JWKs, consent, etc.).
+   * - Requires authentication for any request that hits those endpoints.
+   * - Enables OpenID Connect (OIDC) support on top of OAuth2.
+   * - Disables CSRF protection for these endpoints (CSRF is not applicable to the token endpoints),
+   *   while leaving CSRF handling to other chains if needed.
+   * - Sets an AuthenticationEntryPoint that redirects unauthenticated users to "/login" so users
+   *   see the login page when starting an authorization code flow.
+   * - Enables Resource Server JWT support on these endpoints so JWT-authenticated requests to
+   *   protected AS endpoints work where applicable.
+   * <p></p>
+   * Chain ordering and interaction
+   * - Marked with @Order(1) so it runs BEFORE the application’s default web SecurityFilterChain
+   *   defined in DefaultSecurityConfig (@Order(2)).
+   * - This separation ensures the AS endpoints are handled by SAS’s configuration while the rest
+   *   of the application (e.g., form login pages, actuator) is handled by the default chain.
+   * <p></p>
+   * Behind a gateway / proxy
+   * - Together with gateway settings that preserve Host and forwarded headers, the AS builds
+   *   correct external redirect URLs (e.g., [<a href="https://localhost:8443">...</a>]).
+   * <p></p>
+   * 한국어 설명
+   * - 이 체인은 Spring Authorization Server가 제공하는 엔드포인트(/oauth2/**, OIDC 관련 엔드포인트 등)에만
+   *   적용되도록 범위를 한정하고, 해당 요청은 인증을 요구합니다.
+   * - 인증되지 않은 접근은 /login 으로 리다이렉트되며, CSRF 는 해당 엔드포인트에서만 비활성화합니다.
+   * - @Order(1) 로 기본 보안 체인(@Order(2))보다 먼저 적용되어 권한 부여 서버 엔드포인트가 올바르게 동작합니다.
+   */
+  @Bean
+  @Order(1)
+  public SecurityFilterChain authorizationServerSecurityFilterChain(HttpSecurity http) throws Exception {
+    var authorizationServerConfigurer = new OAuth2AuthorizationServerConfigurer();
+    authorizationServerConfigurer.oidc(Customizer.withDefaults());
+
+    RequestMatcher endpointsMatcher = authorizationServerConfigurer.getEndpointsMatcher();
+
+    http
+        .securityMatcher(endpointsMatcher)
+        .authorizeHttpRequests(authorize -> authorize
+            .anyRequest().authenticated()
+        )
+        .csrf(csrf -> csrf
+            .ignoringRequestMatchers(endpointsMatcher)
+        )
+        .exceptionHandling(exceptions -> exceptions
+            .authenticationEntryPoint(new LoginUrlAuthenticationEntryPoint("/login"))
+        )
+        .oauth2ResourceServer(oauth2 -> oauth2
+            .jwt(Customizer.withDefaults())
+        )
+        .with(authorizationServerConfigurer, (config) -> { /* defaults */ });
+
+    return http.build();
+  }
 
   // @formatter:off
   @Bean
