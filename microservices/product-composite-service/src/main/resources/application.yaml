@@ -11,9 +11,9 @@ springdoc:
       clientId: writer
       clientSecret: secret-writer
       useBasicAuthenticationWithAccessCodeGrant: true
-    oAuthFlow:
-      authorizationUrl: https://localhost:8443/oauth2/authorize
-      tokenUrl: https://localhost:8443/oauth2/token
+  oAuthFlow:
+    authorizationUrl: https://localhost:8443/oauth2/authorize
+    tokenUrl: https://localhost:8443/oauth2/token
 
 # gateway 를 거쳐서 swagger 에 접근하는 경우 product-composite 서비스의 url 을 에지서버의 url 로 대체
 server.forward-headers-strategy: framework
