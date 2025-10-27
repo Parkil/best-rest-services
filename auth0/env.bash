@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+
+TENANT=dev-7zsdq6birxk8zull.jp.auth0.com
+MGM_CLIENT_ID=bEZpt3hHsTNw9fql5gxI2KTM0DAbJMWB
+MGM_CLIENT_SECRET=_x2t8XqmOCn6p246U1SaqBfaOcgQax6wZ2yJM7HYsxu4jWvOEi3oKb5B_hgBiN3g
+USER_EMAIL=test@gmail.com
+USER_PASSWORD=aaa000
