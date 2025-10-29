@@ -127,7 +127,8 @@ spring.rabbitmq:
   username: guest
   password: guest
 
-spring.security.oauth2.resourceserver.jwt.issuer-uri: http://${app.auth-server}:9999
+#auth0.com 에서 회원가입 > 설정을 마친 URL
+spring.security.oauth2.resourceserver.jwt.issuer-uri: https://dev-7zsdq6birxk8zull.jp.auth0.com/
 
 logging:
   level:
