@@ -34,7 +34,8 @@ public class SecurityConfig {
                     .pathMatchers("/error/**").permitAll()
                     .pathMatchers("/openapi/**").permitAll()
                     .pathMatchers("/webjars/**").permitAll()
-                    .anyExchange().authenticated()
+                    .pathMatchers("/config/**").permitAll()
+                .anyExchange().authenticated()
             )
             .oauth2ResourceServer(oauth2 -> oauth2.jwt(Customizer.withDefaults()))
             .build();

@@ -24,6 +24,7 @@ import org.springframework.cloud.stream.binder.test.TestChannelBinderConfigurati
 import org.springframework.context.annotation.Import;
 import org.springframework.http.HttpStatus;
 import org.springframework.messaging.Message;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.reactive.server.WebTestClient;
 import se.magnus.api.composite.product.ProductAggregate;
 import se.magnus.api.composite.product.RecommendationSummary;
@@ -34,12 +35,14 @@ import se.magnus.api.core.review.Review;
 import se.magnus.api.event.Event;
 
 @SpringBootTest(
-        webEnvironment = RANDOM_PORT,
-        classes = {TestSecurityConfig.class},
-        properties = {
-                "spring.security.oauth2.resourceserver.jwt.issuer-uri=",
-                "spring.main.allow-bean-definition-overriding=true",
-                "eureka.client.enabled=false"})
+    webEnvironment = RANDOM_PORT,
+    classes = {TestSecurityConfig.class},
+    properties = {
+        "spring.security.oauth2.resourceserver.jwt.issuer-uri=",
+        "spring.main.allow-bean-definition-overriding=true",
+        "eureka.client.enabled=false",
+        "spring.cloud.stream.defaultBinder=rabbit",
+        "spring.cloud.config.enabled=false"})
 @Import({TestChannelBinderConfiguration.class}) // OutputDestination 을 사용하려면 추가로 정의해야 함
 class MessagingTests {
 

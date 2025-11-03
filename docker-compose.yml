@@ -114,6 +114,7 @@ services:
       timeout: 2s
       retries: 60
 
+  # CONFIG_SERVER_ENCRYPT_KEY, CONFIG_SERVER_USR, CONFIG_SERVER_PWD 는 .env 파일에서 설정된 정보를 가져온다
   config-server:
     build: spring-cloud/config-server
     mem_limit: 512m
