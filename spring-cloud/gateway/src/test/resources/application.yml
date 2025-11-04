@@ -1,0 +1,2 @@
+spring.security.oauth2.resourceserver.jwt.issuer-uri: http://localhost:9999
+app.eureka-server: http://localhost:8761
