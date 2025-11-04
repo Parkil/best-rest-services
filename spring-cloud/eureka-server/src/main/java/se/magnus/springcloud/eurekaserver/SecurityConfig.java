@@ -3,6 +3,7 @@ package se.magnus.springcloud.eurekaserver;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
@@ -22,42 +23,38 @@ public class SecurityConfig {
   private final String password;
 
   public SecurityConfig(
-          @Value("${app.eureka-username}") String username,
-          @Value("${app.eureka-password}") String password
+      @Value("${app.eureka-username}") String username,
+      @Value("${app.eureka-password}") String password
   ) {
     this.username = username;
     this.password = password;
   }
 
   @Bean
-  public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
-    http
-            // Disable CSRF to allow services to register themselves with Eureka
-            .csrf(AbstractHttpConfigurer::disable)
-            .authorizeHttpRequests(auths -> auths
-                    .anyRequest().authenticated()
-            )
-            .httpBasic(httpBasic -> {
-            });
-
-    return http.build();
+  @SuppressWarnings("deprecation")
+  public PasswordEncoder passwordEncoder() {
+    // Keep existing behavior: plain-text passwords for Eureka basic auth
+    return NoOpPasswordEncoder.getInstance();
   }
 
   @Bean
-  public UserDetailsService userDetailsService() {
-    UserDetails user = User.builder()
-            .username(username)
-            .password(password)
-            .authorities("USER")
-            .build();
-
+  public UserDetailsService userDetailsService(PasswordEncoder encoder) {
+    UserDetails user = User.withUsername(username)
+        .password(encoder.encode(password))
+        .authorities("USER")
+        .build();
     return new InMemoryUserDetailsManager(user);
   }
 
-  // Chapter 11 까지는 password 가 평문 기반으로 작동하기 때문에 폐기된 NoOpPasswordEncoder 를 사용
   @Bean
-  @SuppressWarnings("deprecation")
-  public PasswordEncoder passwordEncoder() {
-    return NoOpPasswordEncoder.getInstance();
+  public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+    http
+        // Disable CSRF to allow services to register themselves with Eureka
+        .csrf(AbstractHttpConfigurer::disable)
+        .authorizeHttpRequests(auth -> auth
+            .anyRequest().authenticated()
+        )
+        .httpBasic(Customizer.withDefaults());
+    return http.build();
   }
 }

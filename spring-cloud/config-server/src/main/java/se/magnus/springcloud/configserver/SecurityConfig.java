@@ -12,6 +12,11 @@ import org.springframework.security.web.SecurityFilterChain;
 @Configuration
 public class SecurityConfig {
 
+  /*
+    authenticated 는 설정 되어 있지만 별도의 사용자를 설정하지 않는 경우
+    기본 사용자는
+    user / [로그에 표시되는 일회용 비밀번호] Using generated security password: ~
+   */
   @Bean
   public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
     http

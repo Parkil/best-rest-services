@@ -8,11 +8,24 @@ eureka:
   client:
     serviceUrl:
       defaultZone: "http://${app.eureka-username}:${app.eureka-password}@${app.eureka-server}:8761/eureka/"
+
+    # Eureka 서버 연결 재시도 설정
     initialInstanceInfoReplicationIntervalSeconds: 5
     registryFetchIntervalSeconds: 5
+
+    # 최초 연결 실패 시 재시도
+    registry-fetch-retry-max-attempts: 10
+    registry-fetch-retry-interval-seconds: 5
   instance:
     leaseRenewalIntervalInSeconds: 5
     leaseExpirationDurationInSeconds: 5
+
+# Spring Boot 재시도 설정
+spring:
+  cloud:
+    loadbalancer:
+      retry:
+        enabled: true
 
 spring.rabbitmq:
   host: 127.0.0.1
