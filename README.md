@@ -78,3 +78,27 @@ ENTRYPOINT ["java", "org.springframework.boot.loader.launch.JarLauncher"]
 ```
 dockerfile에서의 EXPOSE 와 docker.yml 파일에서의 port 설정은 별개인듯 EXPOSE 는 내부 docker network 에서 이용하는 port고 
 docker.yml 에서의 port 는 외부 접속용 port 인듯
+
+----------
+
+### config server 
+
+```url
+http://localhost:8888/config/default -> config-repo/application.yml
+http://localhost:8888/config/docker -> config-repo/application.yml 의 docker profile 정보 반환 
+http://localhost:8888/auth-server/default -> config-repo/auth-server.yml
+```
+
+##### 참고 사항
+docker-compose.yml 에서 config server port 설정은 테스트를 위해 작성한 것으로 원래는 필요없는 기능
+
+##### config 서버에서 지원하는 암/복호화
+```암호화
+curl -k https://dev-usr:dev-pwd@localhost:8443/config/encrypt --data-urlencode "test111"
+```
+
+```복호화
+curl -k https://dev-usr:dev-pwd@localhost:8443/config/decrypt -d [암호화된 문자열]
+```
+
+설정에 {cipher} prefix 가 들어가면 config 서버에서 암/복호화 기능을 이용하여 자동으로 복호화해서 사용
