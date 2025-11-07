@@ -17,16 +17,28 @@ spring.cloud.gateway.routes:
   uri: lb://auth-server
   predicates:
   - Path=/oauth2/**
+  filters:
+    - PreserveHostHeader
+    - SetRequestHeader=X-Forwarded-Proto, https
+    - SetRequestHeader=X-Forwarded-Port, 8443
 
 - id: oauth2-login
   uri: lb://auth-server
   predicates:
   - Path=/login/**
+  filters:
+    - PreserveHostHeader
+    - SetRequestHeader=X-Forwarded-Proto, https
+    - SetRequestHeader=X-Forwarded-Port, 8443
 
 - id: oauth2-error
   uri: lb://auth-server
   predicates:
   - Path=/error/**
+  filters:
+    - PreserveHostHeader
+    - SetRequestHeader=X-Forwarded-Proto, https
+    - SetRequestHeader=X-Forwarded-Port, 8443
 
 - id: product-composite-swagger-ui
   uri: lb://product-composite
