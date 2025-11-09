@@ -102,3 +102,60 @@ curl -k https://dev-usr:dev-pwd@localhost:8443/config/decrypt -d [암호화된 �
 ```
 
 설정에 {cipher} prefix 가 들어가면 config 서버에서 암/복호화 기능을 이용하여 자동으로 복호화해서 사용
+
+----------
+
+##### 서킷 브레이커
+- 특정 서비스에 문제가 있다는 것이 감지되면 새로운 요청을 보내지 않도록 처리
+- health check(=probe) 를 주기적으로 수행하여 서비스의 문제가 없다는 것이 판단되면 다시 요청을 보냄
+
+##### 본 프로젝트에서는 Resilience4j 를 이용
+    ###### 대안 
+        - spring-cloud-circuitbreaker
+        - reactive (Mono, Flux) - Mono.retryWhen, Mono.timeout
+
+##### Resilience4j 상태
+ - open
+   - 오류가 발생하여 더이상 요청을 받지 않는 상태
+   - 이 상태일때 수행할 비지니스 로직 / 반환값을 지정하여 빠르게 오류메시지를 반환한다
+ - half open
+   - open 상태에서 일정 시간이 지나면 half open 상태로 전환
+   - 요청을 다시 받음
+   - 오류가 발생하지 않으면 close, 오류가 발생하면 open 으로 전환
+ - close
+   - 정상 상태
+
+##### Resilience4j 설정 에시
+
+```yaml
+resilience4j.timelimiter: # circuit 시간 제한 설정
+   instances:
+      product:
+         timeoutDuration: 2s # 호출 timeout 설정. 설정한 시간이 넘어가면 실패로 간주한다
+
+resilience4j.retry: # circuit 재시도 설정 재시도 관련 정보는 /actuator/retryevents 에서 확인 
+  instances:
+    product:
+      maxAttempts: 3
+      waitDuration: 1000
+      retryExceptions: # 재시도를 시도하는 오류 목록
+      - org.springframework.web.reactive.function.client.WebClientResponseException$InternalServerError
+
+management.health.circuitbreakers.enabled: true # resilience4j - spring actuator 연결
+
+resilience4j.circuitbreaker:
+  instances:
+    product:
+      allowHealthIndicatorToFail: false # circuit 상태가 health check 에 영향을 주게 설정 true 인 경우 open, half-open 상태면 health check 가 fail 로 표시된다 false 면 서비스가 내려가지 않는 한 success 로 표시 
+      registerHealthIndicator: true # health check 사용 (여기서는 spring actuator)
+      slidingWindowType: COUNT_BASED # circuit open 기준 COUNT_BASED(회수), TIME_BASED(시간)
+      slidingWindowSize: 5 # open 기준 여기서는 COUNT_BASED 로 설정했기 때문에 5번 호출의 결과를 가지고 open 여부를 판단
+      failureRateThreshold: 50 # 실패 허용 비율 50% 이기 때문에 slidingWindowSize 의 50% 를 넘어가면 circuit이 open
+      waitDurationInOpenState: 10000 # open -> half-open 으로 전환전 대기하는 시간
+      permittedNumberOfCallsInHalfOpenState: 3 # half-open 상태에서 허용된 호출 수. 이 회수가 넘어가면 open 또는 close 상태로 전환되어야 함
+      automaticTransitionFromOpenToHalfOpenEnabled: true # 대기 시간이 종료되면 half-open 상태로 전환할지 여부 false면 대기시간 종료 + 호출이 있을때 half-open 으로 전환
+      ignoreExceptions: # circuit open, close 판단 기준에서 제외되는 예외
+        - se.magnus.api.exceptions.InvalidInputException
+        - se.magnus.api.exceptions.NotFoundException
+```
+
