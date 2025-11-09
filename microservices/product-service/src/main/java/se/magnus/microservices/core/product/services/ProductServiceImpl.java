@@ -14,6 +14,9 @@ import se.magnus.microservices.core.product.persistence.ProductEntity;
 import se.magnus.microservices.core.product.persistence.ProductRepository;
 import se.magnus.util.http.ServiceUtil;
 
+import java.time.Duration;
+import java.util.Random;
+
 import static java.util.logging.Level.FINE;
 
 @RestController
@@ -52,7 +55,7 @@ public class ProductServiceImpl implements ProductService {
   }
 
   @Override
-  public Mono<Product> getProduct(int productId) {
+  public Mono<Product> getProduct(int productId, int delay, int faultPercent) {
 
     if (productId < 1) {
       throw new InvalidInputException("Invalid productId: " + productId);
@@ -61,12 +64,43 @@ public class ProductServiceImpl implements ProductService {
     LOG.info("Will get product info for id={}", productId);
 
     return repository.findByProductId(productId)
+            .map(e -> throwErrorIfBadLuck(e, faultPercent))
+            .delayElement(Duration.ofSeconds(delay))
             .switchIfEmpty(Mono.error(new NotFoundException("No product found for productId: " + productId)))
             .log(LOG.getName(), FINE)
             .map(mapper::entityToApi)
             .map(this::setServiceAddress);
-
   }
+
+  private ProductEntity throwErrorIfBadLuck(ProductEntity entity, int faultPercent) {
+
+    if (faultPercent == 0) {
+      return entity;
+    }
+
+    int randomThreshold = getRandomNumber(1, 100);
+
+    if (faultPercent < randomThreshold) {
+      LOG.debug("We got lucky, no error occurred, {} < {}", faultPercent, randomThreshold);
+    } else {
+      LOG.debug("Bad luck, an error occurred, {} >= {}", faultPercent, randomThreshold);
+      throw new RuntimeException("Something went wrong...");
+    }
+
+    return entity;
+  }
+
+  private final Random randomNumberGenerator = new Random();
+
+  private int getRandomNumber(int min, int max) {
+
+    if (max < min) {
+      throw new IllegalArgumentException("Max must be greater than min");
+    }
+
+    return randomNumberGenerator.nextInt((max - min) + 1) + min;
+  }
+
   private Product setServiceAddress(Product e) {
     e.setServiceAddress(serviceUtil.getServiceAddress());
     return e;
