@@ -17,6 +17,8 @@ function assertCurl() {
   local expectedHttpCode=$1
   local curlCmd="$2 -w \"%{http_code}\""
   local result=$(eval $curlCmd)
+#  echo $curlCmd
+#  echo $result
   local httpCode="${result:(-3)}"
   RESPONSE='' && (( ${#result} > 3 )) && RESPONSE="${result%???}"
 
@@ -241,7 +243,8 @@ fi
 
 waitForService curl -k https://$HOST:$PORT/actuator/health
 
-ACCESS_TOKEN=$(curl -k https://writer:secret-writer@$HOST:$PORT/oauth2/token -d grant_type=client_credentials -s | jq .access_token -r)
+# delete 의 경우 product:read product:write 권한이 전부 필요하기 때문에 옵션으로 scope 를 명시적으로 지정
+ACCESS_TOKEN=$(curl -k https://writer:secret-writer@$HOST:$PORT/oauth2/token -d grant_type=client_credentials -s -d "scope=product:read product:write" | jq .access_token -r)
 echo ACCESS_TOKEN=$ACCESS_TOKEN
 AUTH="-H \"Authorization: Bearer $ACCESS_TOKEN\""
 
