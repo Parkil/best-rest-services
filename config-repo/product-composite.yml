@@ -96,20 +96,40 @@ spring.cloud.stream:
 
 spring.security.oauth2.resourceserver.jwt.issuer-uri: http://${app.auth-server}:9999
 
+management:
+  health:
+    circuitbreakers:
+      enabled: true
+  endpoints:
+    web:
+      exposure:
+        include: health,info,circuitbreakers,circuitbreakerevents,metrics,prometheus
+  endpoint:
+    health:
+      show-details: always
+  metrics:
+    tags:
+      application: ${spring.application.name}
+    distribution:
+      percentiles-histogram:
+        resilience4j.circuitbreaker.calls: true
+        http.server.requests: true
+
 resilience4j.timelimiter:
   instances:
     product:
       timeoutDuration: 2s
+      # cancelRunningFuture 를 false 로 설정하여 Circuit Breaker 메트릭 수집 방해 방지
+      cancelRunningFuture: false
 
+# 한번 호출시 retryExceptions 에 포함되면 자동으로 재시도
 resilience4j.retry:
   instances:
     product:
       maxAttempts: 3
       waitDuration: 1000
       retryExceptions:
-      - org.springframework.web.reactive.function.client.WebClientResponseException$InternalServerError
-
-management.health.circuitbreakers.enabled: true
+        - org.springframework.web.reactive.function.client.WebClientResponseException$InternalServerError
 
 resilience4j.circuitbreaker:
   instances:
@@ -119,17 +139,16 @@ resilience4j.circuitbreaker:
       slidingWindowType: COUNT_BASED
       slidingWindowSize: 5
       minimumNumberOfCalls: 5
-      failureRateThreshold: 50
+      failureRateThreshold: 39
       waitDurationInOpenState: 10000
       permittedNumberOfCallsInHalfOpenState: 3
       automaticTransitionFromOpenToHalfOpenEnabled: true
+      # Slow Call 설정
+#      slowCallRateThreshold: 50
+#      slowCallDurationThreshold: 2s
       ignoreExceptions:
         - se.magnus.api.exceptions.InvalidInputException
         - se.magnus.api.exceptions.NotFoundException
-      recordExceptions:
-        - java.util.concurrent.TimeoutException
-        - org.springframework.web.reactive.function.client.WebClientRequestException
-        - io.netty.handler.timeout.ReadTimeoutException
 
 logging:
   level:

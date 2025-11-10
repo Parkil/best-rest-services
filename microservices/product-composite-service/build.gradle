@@ -42,10 +42,17 @@ dependencies {
     implementation 'org.springframework.cloud:spring-cloud-starter-config'
     implementation 'org.springframework.retry:spring-retry'
 
-    // resilience4j
-    // https://mvnrepository.com/artifact/io.github.resilience4j/resilience4j-spring-boot3
+    // 책에서는 resilience4j-spring-boot3, resilience4j-reactor 만 설정하고 나머지는 dependencyManagement 에서 의존성을
+    // Resilience4j 의존성 추가 (필수!)
     implementation "io.github.resilience4j:resilience4j-spring-boot3:${resilience4jVersion}"
     implementation "io.github.resilience4j:resilience4j-reactor:${resilience4jVersion}"
+//    implementation "io.github.resilience4j:resilience4j-circuitbreaker:${resilience4jVersion}"
+//    implementation "io.github.resilience4j:resilience4j-timelimiter:${resilience4jVersion}"
+//    implementation "io.github.resilience4j:resilience4j-retry:${resilience4jVersion}"
+//    implementation "io.github.resilience4j:resilience4j-micrometer:${resilience4jVersion}"
+
+    // Micrometer (메트릭 수집)
+    implementation 'io.micrometer:micrometer-registry-prometheus'
 
     testImplementation 'org.springframework.cloud:spring-cloud-starter-config'
     testImplementation 'org.springframework.retry:spring-retry'
@@ -89,7 +96,15 @@ dependencyManagement {
         dependency "io.github.resilience4j:resilience4j-spring6:${resilience4jVersion}"
         dependency "io.github.resilience4j:resilience4j-annotations:${resilience4jVersion}"
         dependency "io.github.resilience4j:resilience4j-consumer:${resilience4jVersion}"
-        dependency "io.github.resilience4j:resilience4j-framework-common:${resilience4jVersion}"
+        dependency "io.github.resilience4j:resilience4j-core:${resilience4jVersion}"
+        dependency "io.github.resilience4j:resilience4j-circuitbreaker:${resilience4jVersion}"
+        dependency "io.github.resilience4j:resilience4j-ratelimiter:${resilience4jVersion}"
+        dependency "io.github.resilience4j:resilience4j-retry:${resilience4jVersion}"
+        dependency "io.github.resilience4j:resilience4j-bulkhead:${resilience4jVersion}"
+        dependency "io.github.resilience4j:resilience4j-timelimiter:${resilience4jVersion}"
+        dependency "io.github.resilience4j:resilience4j-micrometer:${resilience4jVersion}"
+        dependency "io.github.resilience4j:resilience4j-circularbuffer:${resilience4jVersion}"
+
     }
 }
 

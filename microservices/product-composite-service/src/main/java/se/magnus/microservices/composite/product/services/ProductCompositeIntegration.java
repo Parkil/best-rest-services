@@ -2,8 +2,14 @@ package se.magnus.microservices.composite.product.services;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.github.resilience4j.circuitbreaker.CallNotPermittedException;
+import io.github.resilience4j.circuitbreaker.CircuitBreakerRegistry;
 import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
+import io.github.resilience4j.reactor.circuitbreaker.operator.CircuitBreakerOperator;
+import io.github.resilience4j.reactor.retry.RetryOperator;
+import io.github.resilience4j.reactor.timelimiter.TimeLimiterOperator;
+import io.github.resilience4j.retry.RetryRegistry;
 import io.github.resilience4j.retry.annotation.Retry;
+import io.github.resilience4j.timelimiter.TimeLimiterRegistry;
 import io.github.resilience4j.timelimiter.annotation.TimeLimiter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -52,6 +58,11 @@ public class ProductCompositeIntegration implements ProductService, Recommendati
   private final Scheduler publishEventScheduler;
   private final ServiceUtil serviceUtil;
 
+  // Resilience4j 레지스트리 추가
+  private final CircuitBreakerRegistry circuitBreakerRegistry;
+  private final RetryRegistry retryRegistry;
+  private final TimeLimiterRegistry timeLimiterRegistry;
+
   private static final String PRODUCT_SERVICE_URL = "http://product";
   private static final String RECOMMENDATION_SERVICE_URL = "http://recommendation";
   private static final String REVIEW_SERVICE_URL = "http://review";
@@ -63,7 +74,11 @@ public class ProductCompositeIntegration implements ProductService, Recommendati
 
       WebClient.Builder webClientBuilder,
       ObjectMapper mapper,
-      StreamBridge streamBridge, ServiceUtil serviceUtil
+      StreamBridge streamBridge,
+      ServiceUtil serviceUtil,
+      CircuitBreakerRegistry circuitBreakerRegistry,
+      RetryRegistry retryRegistry,
+      TimeLimiterRegistry timeLimiterRegistry
   ) {
 
     this.webClient = webClientBuilder.build();
@@ -71,6 +86,9 @@ public class ProductCompositeIntegration implements ProductService, Recommendati
     this.mapper = mapper;
     this.streamBridge = streamBridge;
     this.serviceUtil = serviceUtil;
+    this.circuitBreakerRegistry = circuitBreakerRegistry;
+    this.retryRegistry = retryRegistry;
+    this.timeLimiterRegistry = timeLimiterRegistry;
   }
 
   @Override
@@ -83,16 +101,24 @@ public class ProductCompositeIntegration implements ProductService, Recommendati
   }
 
   @Override
-  @Retry(name = "product") // resilience4j.retry
-  @TimeLimiter(name = "product") // resilience4j.timelimiter
-  @CircuitBreaker(name = "product", fallbackMethod = "getProductFallbackValue") // resilience4j.circuitbreaker
   public Mono<Product> getProduct(int productId, int delay, int faultPercent) {
     URI url = UriComponentsBuilder.fromUriString(PRODUCT_SERVICE_URL
         + "/product/{productId}?delay={delay}&faultPercent={faultPercent}").build(productId, delay, faultPercent);
     LOG.debug("Will call the getProduct API on URL: {}", url);
 
-    // 테스트를 위해서 명시적으로 timeout 설정
-    return webClient.get().uri(url).retrieve().bodyToMono(Product.class).timeout(java.time.Duration.ofSeconds(2)).log(LOG.getName(), FINE).onErrorMap(WebClientResponseException.class, this::handleException);
+    // Operator 방식으로 Resilience4j 적용 (메트릭이 제대로 수집됨)
+    // annotation 방식은 reactor 가 아닌 방식에서만 정상적으로 작동하는 듯함
+    return webClient.get()
+        .uri(url)
+        .retrieve()
+        .bodyToMono(Product.class)
+        .transform(CircuitBreakerOperator.of(circuitBreakerRegistry.circuitBreaker("product")))
+        .transform(TimeLimiterOperator.of(timeLimiterRegistry.timeLimiter("product")))
+        .transform(RetryOperator.of(retryRegistry.retry("product")))
+        .doOnError(error -> LOG.warn("Error calling product service: {}", error.toString()))
+        .onErrorResume(CallNotPermittedException.class, ex -> getProductFallbackValue(productId, delay, faultPercent, ex))
+        .onErrorMap(WebClientResponseException.class, this::handleException)
+        .log(LOG.getName(), FINE);
   }
 
   // CircuitBreaker open 상태시 처리할 로직 정의
