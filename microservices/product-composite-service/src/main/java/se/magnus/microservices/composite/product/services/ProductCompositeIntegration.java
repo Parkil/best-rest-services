@@ -1,6 +1,10 @@
 package se.magnus.microservices.composite.product.services;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.github.resilience4j.circuitbreaker.CallNotPermittedException;
+import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
+import io.github.resilience4j.retry.annotation.Retry;
+import io.github.resilience4j.timelimiter.annotation.TimeLimiter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -25,6 +29,7 @@ import se.magnus.api.event.Event;
 import se.magnus.api.exceptions.InvalidInputException;
 import se.magnus.api.exceptions.NotFoundException;
 import se.magnus.util.http.HttpErrorInfo;
+import se.magnus.util.http.ServiceUtil;
 
 import java.io.IOException;
 import java.net.URI;
@@ -45,6 +50,7 @@ public class ProductCompositeIntegration implements ProductService, Recommendati
   private final ObjectMapper mapper;
   private final StreamBridge streamBridge;
   private final Scheduler publishEventScheduler;
+  private final ServiceUtil serviceUtil;
 
   private static final String PRODUCT_SERVICE_URL = "http://product";
   private static final String RECOMMENDATION_SERVICE_URL = "http://recommendation";
@@ -53,17 +59,18 @@ public class ProductCompositeIntegration implements ProductService, Recommendati
   // Cannot find bean with qualifier 'publishEventScheduler' 오류 메시지는 신경 안써도 될듯
   // 실제 테스트를 돌려보면 정상적으로 주입되어 표시된다
   public ProductCompositeIntegration(
-          @Qualifier("publishEventScheduler") Scheduler publishEventScheduler,
+      @Qualifier("publishEventScheduler") Scheduler publishEventScheduler,
 
-          WebClient.Builder webClientBuilder,
-          ObjectMapper mapper,
-          StreamBridge streamBridge
+      WebClient.Builder webClientBuilder,
+      ObjectMapper mapper,
+      StreamBridge streamBridge, ServiceUtil serviceUtil
   ) {
 
     this.webClient = webClientBuilder.build();
     this.publishEventScheduler = publishEventScheduler;
     this.mapper = mapper;
     this.streamBridge = streamBridge;
+    this.serviceUtil = serviceUtil;
   }
 
   @Override
@@ -76,12 +83,30 @@ public class ProductCompositeIntegration implements ProductService, Recommendati
   }
 
   @Override
+  @Retry(name = "product") // resilience4j.retry
+  @TimeLimiter(name = "product") // resilience4j.timelimiter
+  @CircuitBreaker(name = "product", fallbackMethod = "getProductFallbackValue") // resilience4j.circuitbreaker
   public Mono<Product> getProduct(int productId, int delay, int faultPercent) {
     URI url = UriComponentsBuilder.fromUriString(PRODUCT_SERVICE_URL
         + "/product/{productId}?delay={delay}&faultPercent={faultPercent}").build(productId, delay, faultPercent);
     LOG.debug("Will call the getProduct API on URL: {}", url);
 
     return webClient.get().uri(url).retrieve().bodyToMono(Product.class).log(LOG.getName(), FINE).onErrorMap(WebClientResponseException.class, this::handleException);
+  }
+
+  // CircuitBreaker open 상태시 처리할 로직 정의
+  private Mono<Product> getProductFallbackValue(int productId, int delay, int faultPercent, CallNotPermittedException ex) {
+
+    LOG.warn("Creating a fail-fast fallback product for productId = {}, delay = {}, faultPercent = {} and exception = {} ",
+        productId, delay, faultPercent, ex.toString());
+
+    if (productId == 13) {
+      String errMsg = "Product Id: " + productId + " not found in fallback cache!";
+      LOG.warn(errMsg);
+      throw new NotFoundException(errMsg);
+    }
+
+    return Mono.just(new Product(productId, "Fallback product" + productId, productId, serviceUtil.getServiceAddress()));
   }
 
 
