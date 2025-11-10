@@ -128,6 +128,9 @@ public class AuthorizationServerConfig {
 
     readerClient, writerClient 가 동일한 평문 clientSecret 를 사용하는 경우 Registered client must be unique 오류가 발생한다
     encoding 된 secret 을 이용하면 문제가 없다고는 하는데 이부분 관련해서는 추가적인 확인이 필요
+
+    여기에서 지정되는 scope 는 해당 clientId / clientSecret 으로 생성되는 token 이 가질수 있는 권한을 지정하는 것이지
+    /oauth2/token 으로 생성되는 token에 scope 가 자동으로 들어간다는 의미는 아님
      */
     LOG.info("register OAuth client allowing all grant flows...");
     RegisteredClient writerClient = RegisteredClient.withId(UUID.randomUUID().toString())

@@ -91,7 +91,8 @@ public class ProductCompositeIntegration implements ProductService, Recommendati
         + "/product/{productId}?delay={delay}&faultPercent={faultPercent}").build(productId, delay, faultPercent);
     LOG.debug("Will call the getProduct API on URL: {}", url);
 
-    return webClient.get().uri(url).retrieve().bodyToMono(Product.class).log(LOG.getName(), FINE).onErrorMap(WebClientResponseException.class, this::handleException);
+    // 테스트를 위해서 명시적으로 timeout 설정
+    return webClient.get().uri(url).retrieve().bodyToMono(Product.class).timeout(java.time.Duration.ofSeconds(2)).log(LOG.getName(), FINE).onErrorMap(WebClientResponseException.class, this::handleException);
   }
 
   // CircuitBreaker open 상태시 처리할 로직 정의
