@@ -44,8 +44,8 @@ dependencies {
 
     // resilience4j
     // https://mvnrepository.com/artifact/io.github.resilience4j/resilience4j-spring-boot3
-    implementation 'io.github.resilience4j:resilience4j-spring-boot3'
-    implementation "io.github.resilience4j:resilience4j-reactor"
+    implementation "io.github.resilience4j:resilience4j-spring-boot3:${resilience4jVersion}"
+    implementation "io.github.resilience4j:resilience4j-reactor:${resilience4jVersion}"
 
     testImplementation 'org.springframework.cloud:spring-cloud-starter-config'
     testImplementation 'org.springframework.retry:spring-retry'
@@ -77,6 +77,19 @@ dependencies {
 dependencyManagement {
     imports {
         mavenBom "org.springframework.cloud:spring-cloud-dependencies:${springCloudVersion}"
+    }
+    /*
+        io.github.resilience4j 에서 정의된 의존성 버전과 하위 의존성 버전이 틀린 경우가 있다
+        resilience4j-spring-boot3 2.3.0
+         - resilience4j-spring6 / resilience4j-annotations / resilience4j-consumer / framework-common 전주 2.2.0 으로 정의된다
+
+        이 경우 classNotFoundException 이 발생하기 때문에 버전을 명시적으로 동일하게 설정한다
+     */
+    dependencies {
+        dependency "io.github.resilience4j:resilience4j-spring6:${resilience4jVersion}"
+        dependency "io.github.resilience4j:resilience4j-annotations:${resilience4jVersion}"
+        dependency "io.github.resilience4j:resilience4j-consumer:${resilience4jVersion}"
+        dependency "io.github.resilience4j:resilience4j-framework-common:${resilience4jVersion}"
     }
 }
 
