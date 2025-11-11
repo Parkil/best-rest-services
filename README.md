@@ -45,6 +45,10 @@ docker-compose build
 docker-compose up -d
 ```
 
+##### 통합
+```bash
+docker-compose down && ./gradlew build && docker-compose build && docker-compose up -d
+```
 ----------
 
 ### gateway actuator 실행시 주의점
@@ -128,34 +132,79 @@ curl -k https://dev-usr:dev-pwd@localhost:8443/config/decrypt -d [암호화된 �
 ##### Resilience4j 설정 에시
 
 ```yaml
-resilience4j.timelimiter: # circuit 시간 제한 설정
-   instances:
-      product:
-         timeoutDuration: 2s # 호출 timeout 설정. 설정한 시간이 넘어가면 실패로 간주한다
 
 resilience4j.retry: # circuit 재시도 설정 재시도 관련 정보는 /actuator/retryevents 에서 확인 
-  instances:
-    product:
-      maxAttempts: 3
-      waitDuration: 1000
-      retryExceptions: # 재시도를 시도하는 오류 목록
-      - org.springframework.web.reactive.function.client.WebClientResponseException$InternalServerError
+   instances:
+      product:
+         maxAttempts: 3
+         waitDuration: 1000
+         retryExceptions: # 재시도를 시도하는 오류 목록
+            - org.springframework.web.reactive.function.client.WebClientResponseException$InternalServerError
 
-management.health.circuitbreakers.enabled: true # resilience4j - spring actuator 연결
-
-resilience4j.circuitbreaker:
-  instances:
-    product:
-      allowHealthIndicatorToFail: false # circuit 상태가 health check 에 영향을 주게 설정 true 인 경우 open, half-open 상태면 health check 가 fail 로 표시된다 false 면 서비스가 내려가지 않는 한 success 로 표시 
-      registerHealthIndicator: true # health check 사용 (여기서는 spring actuator)
-      slidingWindowType: COUNT_BASED # circuit open 기준 COUNT_BASED(회수), TIME_BASED(시간)
-      slidingWindowSize: 5 # open 기준 여기서는 COUNT_BASED 로 설정했기 때문에 5번 호출의 결과를 가지고 open 여부를 판단
-      failureRateThreshold: 50 # 실패 허용 비율 50% 이기 때문에 slidingWindowSize 의 50% 를 넘어가면 circuit이 open
-      waitDurationInOpenState: 10000 # open -> half-open 으로 전환전 대기하는 시간
-      permittedNumberOfCallsInHalfOpenState: 3 # half-open 상태에서 허용된 호출 수. 이 회수가 넘어가면 open 또는 close 상태로 전환되어야 함
-      automaticTransitionFromOpenToHalfOpenEnabled: true # 대기 시간이 종료되면 half-open 상태로 전환할지 여부 false면 대기시간 종료 + 호출이 있을때 half-open 으로 전환
-      ignoreExceptions: # circuit open, close 판단 기준에서 제외되는 예외
-        - se.magnus.api.exceptions.InvalidInputException
-        - se.magnus.api.exceptions.NotFoundException
+resilience4j:
+  circuitbreaker:
+    instances:
+      product:
+        allowHealthIndicatorToFail: false # circuit 상태가 health check 에 영향을 주게 설정 true 인 경우 open, half-open 상태면 health check 가 fail 로 표시된다 false 면 서비스가 내려가지 않는 한 success 로 표시 
+        registerHealthIndicator: true # health check 사용 (여기서는 spring actuator)
+        slidingWindowType: COUNT_BASED # circuit open 기준 COUNT_BASED(회수), TIME_BASED(시간)
+        slidingWindowSize: 5 # open 기준 여기서는 COUNT_BASED 로 설정했기 때문에 5번 호출의 결과를 가지고 open 여부를 판단
+        minimumNumberOfCalls: 5 # 최소 호출 회수. 이 회수를 넘겨야 circuitbreaker 기준을 판단한다.
+        failureRateThreshold: 50 # 실패 허용 비율 50% 이기 때문에 slidingWindowSize 의 50% 를 넘어가면 circuit이 open
+        waitDurationInOpenState: 10000 # open -> half-open 으로 전환전 대기하는 시간
+        permittedNumberOfCallsInHalfOpenState: 3 # half-open 상태에서 허용된 호출 수. 이 회수가 넘어가면 open 또는 close 상태로 전환되어야 함
+        automaticTransitionFromOpenToHalfOpenEnabled: true # 대기 시간이 종료되면 half-open 상태로 전환할지 여부 false면 대기시간 종료 + 호출이 있을때 half-open 으로 전환
+        ignoreExceptions: # circuit open, close 판단 기준에서 제외되는 예외
+          - se.magnus.api.exceptions.InvalidInputException
+          - se.magnus.api.exceptions.NotFoundException
+  timelimiter:
+    instances:
+      product:
+        timeoutDuration: 4s
+        cancelRunningFuture: true
 ```
 
+##### Resilience4j Reactive 환경
+ - reactive(Mono,Flux) 환경에서는 annotation 은 작동하지 않는다
+ - 아래 코드처럼 직접 transform 으로 호출해 주어야 함
+
+##### Resilience4j timelimter failCount 설정
+- 기본적으로 timelimter 와 circuitbreaker는 별개로 작동하며 metric 도 별개의 metric 을 사용한다
+  - /actuator/metrics/resilience4j.timelimiter.calls (timelimter)
+  - /actuator/metrics/resilience4j.circuitbreaker.calls (circuitbreaker)
+- timelimter 오류를 circuitbreaker failCount 에 포함시키려면 timelimter 설정을 circuitbreaker로 감싸야 한다
+
+###### timelimter 를 circuitbreaker로 감싸는 코드
+timelimter 가 circuitbreaker 보다 먼저 호출되어야 한다
+
+```java
+public Mono<Product> getProduct(int productId, int delay, int faultPercent) {
+   URI url = UriComponentsBuilder.fromUriString(PRODUCT_SERVICE_URL
+           + "/product/{productId}?delay={delay}&faultPercent={faultPercent}").build(productId, delay, faultPercent);
+   LOG.debug("Will call the getProduct API on URL: {}", url);
+
+   return webClient.get()
+           .uri(url)
+           .retrieve()
+           .bodyToMono(Product.class)
+           .transformDeferred(TimeLimiterOperator.of(timeLimiterRegistry.timeLimiter("product")))
+           .transformDeferred(CircuitBreakerOperator.of(circuitBreakerRegistry.circuitBreaker("product")))
+           .transformDeferred(RetryOperator.of(retryRegistry.retry("product")))
+           .doOnError(error -> LOG.warn("Error calling product service: {}", error.toString()))
+           .onErrorResume(CallNotPermittedException.class, ex -> getProductFallbackValue(productId, delay, faultPercent, ex))
+           .onErrorMap(WebClientResponseException.class, this::handleException)
+           .log(LOG.getName(), FINE);
+}
+```
+
+---
+
+docker-compose exec -T product-composite curl -s http://product-composite:8080/actuator/health | jq
+
+docker-compose exec -T product-composite curl -s http://product-composite:8080/actuator/metrics/resilience4j.circuitbreaker.calls | jq
+
+docker-compose exec -T product-composite curl -s http://product-composite:8080/actuator/metrics/resilience4j.circuitbreaker.calls?tag=kind:failed | jq
+
+docker-compose exec -T product-composite curl -s http://product-composite:8080/actuator/metrics/resilience4j.timelimiter.calls | jq
+
+secret-writer

@@ -113,14 +113,8 @@ management:
     distribution:
       percentiles-histogram:
         resilience4j.circuitbreaker.calls: true
+        resilience4j.timelimiter.calls: true
         http.server.requests: true
-
-resilience4j.timelimiter:
-  instances:
-    product:
-      timeoutDuration: 2s
-      # cancelRunningFuture 를 false 로 설정하여 Circuit Breaker 메트릭 수집 방해 방지
-      cancelRunningFuture: false
 
 # 한번 호출시 retryExceptions 에 포함되면 자동으로 재시도
 resilience4j.retry:
@@ -131,24 +125,30 @@ resilience4j.retry:
       retryExceptions:
         - org.springframework.web.reactive.function.client.WebClientResponseException$InternalServerError
 
-resilience4j.circuitbreaker:
-  instances:
-    product:
-      allowHealthIndicatorToFail: false
-      registerHealthIndicator: true
-      slidingWindowType: COUNT_BASED
-      slidingWindowSize: 5
-      minimumNumberOfCalls: 5
-      failureRateThreshold: 39
-      waitDurationInOpenState: 10000
-      permittedNumberOfCallsInHalfOpenState: 3
-      automaticTransitionFromOpenToHalfOpenEnabled: true
-      # Slow Call 설정
-#      slowCallRateThreshold: 50
-#      slowCallDurationThreshold: 2s
-      ignoreExceptions:
-        - se.magnus.api.exceptions.InvalidInputException
-        - se.magnus.api.exceptions.NotFoundException
+resilience4j:
+  circuitbreaker:
+    instances:
+      product:
+        allowHealthIndicatorToFail: false
+        registerHealthIndicator: true
+        slidingWindowType: COUNT_BASED
+        slidingWindowSize: 5
+        minimumNumberOfCalls: 5
+        failureRateThreshold: 50
+        waitDurationInOpenState: 10000 # milliseconds
+        permittedNumberOfCallsInHalfOpenState: 3
+        automaticTransitionFromOpenToHalfOpenEnabled: true
+        # Slow Call 설정
+        slowCallRateThreshold: 50
+        slowCallDurationThreshold: 2s
+        ignoreExceptions:
+          - se.magnus.api.exceptions.InvalidInputException
+          - se.magnus.api.exceptions.NotFoundException
+  timelimiter:
+    instances:
+      product:
+        timeoutDuration: 4s
+        cancelRunningFuture: true
 
 logging:
   level:

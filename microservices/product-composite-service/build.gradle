@@ -42,14 +42,8 @@ dependencies {
     implementation 'org.springframework.cloud:spring-cloud-starter-config'
     implementation 'org.springframework.retry:spring-retry'
 
-    // 책에서는 resilience4j-spring-boot3, resilience4j-reactor 만 설정하고 나머지는 dependencyManagement 에서 의존성을
-    // Resilience4j 의존성 추가 (필수!)
     implementation "io.github.resilience4j:resilience4j-spring-boot3:${resilience4jVersion}"
     implementation "io.github.resilience4j:resilience4j-reactor:${resilience4jVersion}"
-//    implementation "io.github.resilience4j:resilience4j-circuitbreaker:${resilience4jVersion}"
-//    implementation "io.github.resilience4j:resilience4j-timelimiter:${resilience4jVersion}"
-//    implementation "io.github.resilience4j:resilience4j-retry:${resilience4jVersion}"
-//    implementation "io.github.resilience4j:resilience4j-micrometer:${resilience4jVersion}"
 
     // Micrometer (메트릭 수집)
     implementation 'io.micrometer:micrometer-registry-prometheus'

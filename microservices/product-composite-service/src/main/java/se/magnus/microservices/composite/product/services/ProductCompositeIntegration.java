@@ -3,14 +3,11 @@ package se.magnus.microservices.composite.product.services;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.github.resilience4j.circuitbreaker.CallNotPermittedException;
 import io.github.resilience4j.circuitbreaker.CircuitBreakerRegistry;
-import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import io.github.resilience4j.reactor.circuitbreaker.operator.CircuitBreakerOperator;
 import io.github.resilience4j.reactor.retry.RetryOperator;
 import io.github.resilience4j.reactor.timelimiter.TimeLimiterOperator;
 import io.github.resilience4j.retry.RetryRegistry;
-import io.github.resilience4j.retry.annotation.Retry;
 import io.github.resilience4j.timelimiter.TimeLimiterRegistry;
-import io.github.resilience4j.timelimiter.annotation.TimeLimiter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -106,15 +103,23 @@ public class ProductCompositeIntegration implements ProductService, Recommendati
         + "/product/{productId}?delay={delay}&faultPercent={faultPercent}").build(productId, delay, faultPercent);
     LOG.debug("Will call the getProduct API on URL: {}", url);
 
-    // Operator 방식으로 Resilience4j 적용 (메트릭이 제대로 수집됨)
-    // annotation 방식은 reactor 가 아닌 방식에서만 정상적으로 작동하는 듯함
+    /*
+      annotation 방식은 reactive 방식(Mono, Flux) 에서는 작동하지 않음(오류를 failCount 로 집계 하지 못함)
+      timelimiter 설정
+      원래 timelimiter 는 CircuitBreaker 와 별개로 집계되는 데이터이며 timelimiter 는 health indicator 가 정의되어 있지 않기 때문에
+      별도의 health indicator 를 만들지 않는 이상 spring actuator 에 time limit 은 표시되지 않는다
+
+      timelimiter 의 timeout 을 fail 로 집계해서 circuit 상태를 변경하고자 한다면 timelimiter 를 CircuitBreaker 로 감싸야 하는데
+      주의점은 transformDeferred 순서를 timelimiter -> CircuitBreaker 순으로 해야 한다
+      만약 CircuitBreaker -> timelimiter 순으로 하면 timelimit 오류는 발생하지만 이를 CircuitBreaker 에서 인식을 못해서 failCount 로 집계 되지 않음에 주의
+     */
     return webClient.get()
         .uri(url)
         .retrieve()
         .bodyToMono(Product.class)
-        .transform(CircuitBreakerOperator.of(circuitBreakerRegistry.circuitBreaker("product")))
-        .transform(TimeLimiterOperator.of(timeLimiterRegistry.timeLimiter("product")))
-        .transform(RetryOperator.of(retryRegistry.retry("product")))
+        .transformDeferred(TimeLimiterOperator.of(timeLimiterRegistry.timeLimiter("product")))
+        .transformDeferred(CircuitBreakerOperator.of(circuitBreakerRegistry.circuitBreaker("product")))
+        .transformDeferred(RetryOperator.of(retryRegistry.retry("product")))
         .doOnError(error -> LOG.warn("Error calling product service: {}", error.toString()))
         .onErrorResume(CallNotPermittedException.class, ex -> getProductFallbackValue(productId, delay, faultPercent, ex))
         .onErrorMap(WebClientResponseException.class, this::handleException)
