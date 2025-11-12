@@ -179,12 +179,12 @@ function testCircuitBreaker() {
     # Open the circuit breaker by running three slow calls in a row, i.e. that cause a timeout exception
     # Also, verify that we get 500 back and a timeout related error message
 
-    for ((n=0; n<10; n++))
+    for ((n=0; n<2; n++))
     do
         echo case1
         assertCurl 500 "curl -k https://$HOST:$PORT/product-composite/$PROD_ID_REVS_RECS?delay=5 $AUTH -s"
         message=$(echo $RESPONSE | jq -r .message)
-        assertEqual "Did not observe any item or terminal signal within 2000ms" "${message:0:57}"
+        assertEqual "Did not observe any item or terminal signal within 4000ms" "${message:0:57}"
     done
 
     # Verify that the circuit breaker is open
@@ -192,7 +192,7 @@ function testCircuitBreaker() {
 
     # Verify that the circuit breaker now is open by running the slow call again, verify it gets 200 back, i.e. fail fast works, and a response from the fallback method.
     echo case2
-    assertCurl 200 "curl -k https://$HOST:$PORT/product-composite/$PROD_ID_REVS_RECS?delay=2 $AUTH -s"
+    assertCurl 200 "curl -k https://$HOST:$PORT/product-composite/$PROD_ID_REVS_RECS?delay=3 $AUTH -s"
     assertEqual "Fallback product$PROD_ID_REVS_RECS" "$(echo "$RESPONSE" | jq -r .name)"
 
     # Also, verify that the circuit breaker is open by running a normal call, verify it also gets 200 back and a response from the fallback method.

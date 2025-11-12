@@ -138,9 +138,9 @@ resilience4j:
         waitDurationInOpenState: 10000 # milliseconds
         permittedNumberOfCallsInHalfOpenState: 3
         automaticTransitionFromOpenToHalfOpenEnabled: true
-        # Slow Call 설정
-        slowCallRateThreshold: 50
-        slowCallDurationThreshold: 2s
+        # Slow Call 설정 - slow 와 timelimiter 를 같이 설정하게 되면 slowCalls, slowFailedCalls 로 중복 count 가 된다
+#        slowCallRateThreshold: 50
+#        slowCallDurationThreshold: 2s
         ignoreExceptions:
           - se.magnus.api.exceptions.InvalidInputException
           - se.magnus.api.exceptions.NotFoundException
