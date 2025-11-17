@@ -48,6 +48,10 @@ dependencies {
     // Micrometer (메트릭 수집)
     implementation 'io.micrometer:micrometer-registry-prometheus'
 
+    // Micrometer Tracing + Zipkin (분산 추적)
+    implementation 'io.micrometer:micrometer-tracing-bridge-brave'
+    implementation 'io.zipkin.reporter2:zipkin-reporter-brave'
+
     testImplementation 'org.springframework.cloud:spring-cloud-starter-config'
     testImplementation 'org.springframework.retry:spring-retry'
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
@@ -82,7 +86,7 @@ dependencyManagement {
     /*
         io.github.resilience4j 에서 정의된 의존성 버전과 하위 의존성 버전이 틀린 경우가 있다
         resilience4j-spring-boot3 2.3.0
-         - resilience4j-spring6 / resilience4j-annotations / resilience4j-consumer / framework-common 전주 2.2.0 으로 정의된다
+         - resilience4j-spring6 / resilience4j-annotations / resilience4j-consumer / framework-common 은 2.2.0 으로 정의된다
 
         이 경우 classNotFoundException 이 발생하기 때문에 버전을 명시적으로 동일하게 설정한다
      */

@@ -101,6 +101,16 @@ spring.cloud.gateway.routes:
 
 spring.security.oauth2.resourceserver.jwt.issuer-uri: http://${app.auth-server}:9999
 
+# Micrometer Tracing (replaces Sleuth)
+# Reactor instrumentation is enabled by default in Spring Boot 3.x
+# Set propagation type if B3 headers are needed for Zipkin compatibility
+management:
+  tracing:
+    propagation:
+      type:
+        - w3c
+        - b3
+
 logging:
   level:
     root: INFO

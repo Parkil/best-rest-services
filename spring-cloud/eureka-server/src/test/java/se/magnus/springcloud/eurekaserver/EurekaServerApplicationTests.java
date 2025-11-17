@@ -17,7 +17,7 @@ import org.springframework.http.ResponseEntity;
   spring.config.import: "configserver:" 오류가 계속 났던 이유가 SpringBootTest는 config server 를 사용하지 않기 때문에 pring.cloud.config.enabled=false 를 설정 했지만
   default profile 에 spring.config.import: "configserver:" 가 있어서 오류가 난 듯
  */
-@SpringBootTest(webEnvironment = RANDOM_PORT, properties = {"spring.cloud.config.enabled=false"})
+@SpringBootTest(webEnvironment = RANDOM_PORT, properties = {"management.health.rabbit.enabled=false", "spring.cloud.config.enabled=false"})
 class EurekaServerApplicationTests {
   //@Value 의 주입시점은 생성자/필드/setter 메서드 호출 시점
   @Value("${app.eureka-username}")
