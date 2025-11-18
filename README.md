@@ -208,3 +208,24 @@ docker-compose exec -T product-composite curl -s http://product-composite:8080/a
 docker-compose exec -T product-composite curl -s http://product-composite:8080/actuator/metrics/resilience4j.timelimiter.calls | jq
 
 secret-writer
+
+---
+
+sleuth - 최신 버전은 3.1 이며 현재는 Micrometer 프로젝트 (https://micrometer.io/docs/tracing) 로 이관되어 더이상 유지보수가 되지 않는 상태
+
+---
+
+RabbitMQ 에서 queue 에 있는 message 조회시 http://localhost:15672 queue > get messages 에서
+Ack Mode 를 Nack message requeue true 로 해야 데이터가 유실되지 않는다(queue 에서 message 를 가져온다음
+다시 queue 에 넣는 설정)
+
+RabbitMQ 에서는 queue 에 있는 메시지 조회만 하는 기능은 없다고 함
+
+단 다시 queue 에 넣는 과정에서 입력 순서가 변동될 가능성이 존재 하기 때문에 별도의 queue 를 따로 만들어서
+일종의 감사용으로 사용
+
+본 프로젝트에서는 auditGroup 이 해당 역할 을 담당
+
+http://localhost:9411/zipkin/dependency 에서 한번에 표시되는 dependency 만 trace 시 같이 표시된다
+
+주의할점은 sampling 데이터가 없으면 dependency 도 표시되지 않음

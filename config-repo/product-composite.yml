@@ -84,14 +84,17 @@ spring.cloud.stream:
     products-out-0:
       destination: products
       producer:
+        headerPatterns: "*"
         required-groups: auditGroup
     recommendations-out-0:
       destination: recommendations
       producer:
+        headerPatterns: "*"
         required-groups: auditGroup
     reviews-out-0:
       destination: reviews
       producer:
+        headerPatterns: "*"
         required-groups: auditGroup
 
 spring.security.oauth2.resourceserver.jwt.issuer-uri: http://${app.auth-server}:9999

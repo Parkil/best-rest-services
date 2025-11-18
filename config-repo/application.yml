@@ -46,6 +46,7 @@ management:
       type:
         - w3c
         - b3
+        - b3_multi
 
 # WARNING: Exposing all management endpoints over http should only be used during development, must be locked down in production!
 management.endpoint.health.show-details: "ALWAYS"
