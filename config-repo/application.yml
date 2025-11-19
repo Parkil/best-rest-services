@@ -73,4 +73,5 @@ spring.cloud.stream.defaultBinder: kafka
 spring.kafka.bootstrap-servers: kafka:9092
 spring.cloud.stream.kafka.binder.replication-factor: 1
 
-management.zipkin.tracing.endpoint: http://zipkin:9411/api/v2/spans
+# Zipkin over Kafka 설정: 애플리케이션이 스팬을 Kafka 'zipkin' 토픽으로 전송하도록 부트스트랩 서버 지정
+zipkin.kafka.bootstrap-servers: kafka:9092
