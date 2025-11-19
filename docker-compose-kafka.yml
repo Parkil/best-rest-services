@@ -205,3 +205,15 @@ services:
       - "9411:9411"
     depends_on:
       - kafka
+
+  # Kafka 토픽/컨슈머/메시지 등을 UI 로 확인할 수 있는 Kafdrop 추가
+  kafdrop:
+    image: obsidiandynamics/kafdrop:latest
+    mem_limit: 512m
+    ports:
+      - "19000:9000"  # http://localhost:19000
+    environment:
+      - KAFKA_BROKERCONNECT=kafka:9092
+    depends_on:
+      kafka:
+        condition: service_started
