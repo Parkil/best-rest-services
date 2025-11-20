@@ -229,3 +229,10 @@ RabbitMQ 에서는 queue 에 있는 메시지 조회만 하는 기능은 없다�
 http://localhost:9411/zipkin/dependency 에서 한번에 표시되는 dependency 만 trace 시 같이 표시된다
 
 주의할점은 sampling 데이터가 없으면 dependency 도 표시되지 않음
+
+zipkin + rabbitmq, kafka 모두 데이터는 정상적으로 표시가 되는데 product-composite -> product, review, recommendation span 이 연결이 안된다
+지금까지 AI 로 찾아본 바로는 zipkin header 가 product-composite -> 하위 서비스로 전파가 안되어서 그렇다고는 하는데 설정할 수 있는 설정은 다 했음에도 
+안되는 것으로 보아서는 다른 문제가 있는 듯
+
+
+kafka-topics --bootstrap-server zookeeper --list
