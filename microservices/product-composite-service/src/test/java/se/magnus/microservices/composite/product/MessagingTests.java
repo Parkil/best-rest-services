@@ -40,7 +40,6 @@ import se.magnus.api.event.Event;
     properties = {
         "spring.security.oauth2.resourceserver.jwt.issuer-uri=",
         "spring.main.allow-bean-definition-overriding=true",
-        "eureka.client.enabled=false",
         "spring.cloud.stream.defaultBinder=rabbit",
         "spring.cloud.config.enabled=false"})
 @Import({TestChannelBinderConfiguration.class}) // OutputDestination 을 사용하려면 추가로 정의해야 함

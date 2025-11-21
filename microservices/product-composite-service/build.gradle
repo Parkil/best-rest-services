@@ -36,7 +36,6 @@ dependencies {
     implementation 'org.springframework.cloud:spring-cloud-starter-stream-kafka:4.3.0'
     implementation 'org.springdoc:springdoc-openapi-starter-webflux-ui:2.8.9'
     implementation 'org.springframework.cloud:spring-cloud-starter-loadbalancer'
-    implementation 'org.springframework.cloud:spring-cloud-starter-netflix-eureka-client'
 
     // config 서버 설정
     implementation 'org.springframework.cloud:spring-cloud-starter-config'

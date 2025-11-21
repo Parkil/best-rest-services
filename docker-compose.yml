@@ -89,16 +89,6 @@ services:
       timeout: 2s
       retries: 60
 
-  # auth 가 설정되어 있기 깨문에 단순 http://localhost:8761/actuator/health 호출 은 401이 발생한다
-  eureka:
-    build: spring-cloud/eureka-server
-    environment:
-      - SPRING_PROFILES_ACTIVE=docker
-      - CONFIG_SERVER_USR=${CONFIG_SERVER_USR}
-      - CONFIG_SERVER_PWD=${CONFIG_SERVER_PWD}
-    mem_limit: 512m
-
-
   # docker compose 설정 시 keystore / password 지정, application.yml 에 설정된 경로를 override 가능
   # 설마 server.ssl.key-store 라서 environment 가SERVER_SSL_KEY_STORE 인건가?
   # SERVER_SSL_KEY_STORE 의 경우 host 서버 경로를 지정해야 함 주의
