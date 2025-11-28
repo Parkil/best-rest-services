@@ -23,7 +23,8 @@ public class SecurityConfig {
       // Disable CSRF to allow POST to /encrypt and /decrypt endpoints
       .csrf(AbstractHttpConfigurer::disable)
       .authorizeHttpRequests(auth -> auth
-        .anyRequest().authenticated()
+              .requestMatchers("/actuator/**").permitAll()
+              .anyRequest().authenticated()
       )
       .httpBasic(Customizer.withDefaults());
 
