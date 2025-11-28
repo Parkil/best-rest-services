@@ -99,3 +99,4 @@ logging:
     org.springframework.cloud.gateway: TRACE
     org.springframework.web.server.adapter.HttpWebHandlerAdapter: TRACE
 
+management.endpoint.health.group.readiness.include: ping

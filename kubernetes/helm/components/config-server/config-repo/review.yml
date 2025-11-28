@@ -55,6 +55,8 @@ spring.datasource.url: jdbc:mysql://mysql/review-db
 # Docker 환경에서 Zipkin 엔드포인트
 management.zipkin.tracing.endpoint: http://zipkin:9411/api/v2/spans
 
+management.endpoint.health.group.readiness.include: ping, db
+
 ---
 spring.config.activate.on-profile: streaming_partitioned
 

@@ -164,6 +164,8 @@ spring.config.activate.on-profile: docker
 
 server.port: 80
 
+management.endpoint.health.group.readiness.include: ping, rabbit
+
 ---
 spring.config.activate.on-profile: streaming_partitioned
 
