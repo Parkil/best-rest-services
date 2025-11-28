@@ -1,6 +1,7 @@
 services:
   product:
     build: microservices/product-service
+    image: hands-on/product-service
     mem_limit: 512m
     environment:
       - SPRING_PROFILES_ACTIVE=docker
@@ -14,6 +15,7 @@ services:
 
   recommendation:
     build: microservices/recommendation-service
+    image: hands-on/recommendation-service
     mem_limit: 512m
     environment:
       - SPRING_PROFILES_ACTIVE=docker
@@ -27,6 +29,7 @@ services:
 
   review:
     build: microservices/review-service
+    image: hands-on/review-service
     mem_limit: 512m
     environment:
       - SPRING_PROFILES_ACTIVE=docker
@@ -40,6 +43,7 @@ services:
 
   product-composite:
     build: microservices/product-composite-service
+    image: hands-on/product-composite-service
     mem_limit: 512m
     environment:
       - SPRING_PROFILES_ACTIVE=docker
@@ -47,6 +51,8 @@ services:
       - CONFIG_SERVER_PWD=${CONFIG_SERVER_PWD}
     depends_on:
       rabbitmq:
+        condition: service_healthy
+      auth-server:
         condition: service_healthy
 
   mongodb:
@@ -94,12 +100,13 @@ services:
   # SERVER_SSL_KEY_STORE 의 경우 host 서버 경로를 지정해야 함 주의
   # docker-compose up gateway - gateway 만 실행
   gateway:
+    build: spring-cloud/gateway
+    image: hands-on/gateway
+    mem_limit: 512m
     environment:
       - SPRING_PROFILES_ACTIVE=docker
       - CONFIG_SERVER_USR=${CONFIG_SERVER_USR}
       - CONFIG_SERVER_PWD=${CONFIG_SERVER_PWD}
-    build: spring-cloud/gateway
-    mem_limit: 512m
     ports:
       - "8443:8443"
     depends_on:
@@ -107,12 +114,13 @@ services:
         condition: service_healthy
 
   auth-server:
+    build: spring-cloud/authorization-server
+    image: hands-on/auth-server
+    mem_limit: 512m
     environment:
       - SPRING_PROFILES_ACTIVE=docker
       - CONFIG_SERVER_USR=${CONFIG_SERVER_USR}
       - CONFIG_SERVER_PWD=${CONFIG_SERVER_PWD}
-    build: spring-cloud/authorization-server
-    mem_limit: 512m
 
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:9999/actuator/health"]
@@ -123,6 +131,7 @@ services:
   # CONFIG_SERVER_ENCRYPT_KEY, CONFIG_SERVER_USR, CONFIG_SERVER_PWD 는 .env 파일에서 설정된 정보를 가져온다
   config-server:
     build: spring-cloud/config-server
+    image: hands-on/config-server
     ports:
       - "8888:8888"
     mem_limit: 512m
@@ -132,7 +141,7 @@ services:
       - SPRING_SECURITY_USER_NAME=${CONFIG_SERVER_USR}
       - SPRING_SECURITY_USER_PASSWORD=${CONFIG_SERVER_PWD}
     volumes:
-      - $PWD/config-repo:/config-repo
+      - $PWD/config-repo-txt:/config-repo-txt
 
   zipkin:
     image: openzipkin/zipkin:2.23.2

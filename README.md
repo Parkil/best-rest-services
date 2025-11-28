@@ -1,7 +1,7 @@
 ### build 에 필요한 JDK/JRE 이미지 빌드 스크립트
 
 ```script
- docker buildx build -t alpine/jre21 -f .\Dockerfile_alpine_jre21 .
+ docker buildx build -t alpine/jre21 -f Dockerfile_alpine_jre21 .
 ```
 
 
@@ -236,3 +236,191 @@ zipkin + rabbitmq, kafka 모두 데이터는 정상적으로 표시가 되는데
 
 
 kafka-topics --bootstrap-server zookeeper --list
+
+---
+
+liveness probe : container 상태 체크
+readiness probe : 요청 수락 준비가 되었는지 체크
+
+calico flannel 같은 네트워크 플러그인을 CNI 라고 하는줄 알았는데 이제 보니까 CNI(Container network interface) 는 spec 의 일종
+-> 네트워크 플러그인을 쓰지 않으면 기본적으로 모든 network 를 허용 
+
+pod <-> deployment <-> service <-> ingress 
+
+service 는 network endpoint 를 담당
+
+실습을 위해 minikube + kubectl 을 이용
+
+```bash
+minikube start --profile=test --memory=10240 --cpus=4 --disk-size=20g --ports=8080:80 --ports=8443:443 --ports=30080:30080 --ports=30443:30443
+
+minikube profile test
+
+minikube addons enable ingress
+minikube addons enable metrics-server
+```
+
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nginx-deploy # deployment 명칭, 이 뒤에 랜덤 문자열이 붙는다
+spec:
+  replicas: 1 # replica 복제본 개수 설정
+  selector: # deployment 에서 동일한 조건을 가지는 pod 를 검색
+    matchLabels: 
+      app: nginx-app
+  template: # pod 생성 조건 지정
+    metadata:
+      labels:
+        app: nginx-app
+    spec: # pod 내부의 container (docker, podman ...) 설정
+      containers:
+      - name: nginx-container
+        image: nginx:latest
+        ports:
+        - containerPort: 80
+```
+
+```yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: nginx-service
+spec:
+  type: NodePort # service 유형 (ClusterIP(내부 통신용), NodePort(외부통신 - 포트로 직점 전달), LoadBalancer(외부통신 - LoadBalancer 생성) ...)
+  selector:
+    app: nginx-app
+  ports:
+    - targetPort: 80
+      port: 80
+      nodePort: 30080
+```
+NodePort, LoadBalancer 차이점
+- NodePort 는 외부 포트 -> service port 로 직접 트래픽이 전달
+- LoadBalancer 는 외부 포트 -> LoadBalancer -> service 로 전달
+- NodePort 의 경우에는 직접 전달되기 때문에 각 서비스별로 port가 전부 달라야 하고 로드 밸런싱이 안된다는 것이 단점
+
+예전에 쿠버네티스 교과서로 helm 을 접했을때에는 단일 설정만 배웠는데 지금 설정을 보니 공통 (common/templates, common/values.yaml) 으로 설정한 다음
+이를 상속받아서 사용하는 방법도 있다
+
+template 만 상속받아서 채워야 하는 값만 해당 repo 의 values.yaml 에 설정
+
+helm 에서 사용하는 template 구문은 go template 을 이용한다 (https://golang.org/pkg/text/template/)
+
+```yaml
+{{ (.Files.Glob "config-repo-txt/*").AsConfig | indent 2 }}
+```
+helm 에서 yml 파일을 읽어서 바로 helm 설정 파일로 변환
+
+```yaml
+{{- $common := dict "Values" .Values.common -}} # common/values.yaml 의 값 
+{{- $noCommon := omit .Values "common" -}} # common/values.yaml 에 포함되지 않은 값
+{{- $overrides := dict "Values" $noCommon -}} 
+{{- $noValues := omit . "Values" -}} 
+{{- with merge $noValues $overrides $common -}}
+```
+
+helm yaml 확인 (docker-compose config 와 유사)
+```
+helm template components/gateway -s templates/service.yaml
+```
+
+helm 의존성 업데이트
+이 부분을 수행하면 environments/dev-env 에 tar파일이 생성된다
+```
+for f in kubernetes/helm/components/*; do helm dep up $f; done
+for f in kubernetes/helm/environments/*; do helm dep up $f; done
+
+helm dep ls kubernetes/helm/environments/dev-env/
+```
+
+helm 시작
+```
+helm install hands-on-dev-env kubernetes/helm/environments/dev-env -n hands-on --create-namespace
+
+helm install --dry-run --debug hands-on-dev-env kubernetes/helm/environments/dev-env
+
+kubectl config set-context $(kubectl config current-context) --namespace=hands-on
+
+kubectl delete namespace hands-on
+```
+
+minikube docker 
+```bash
+eval $(minikube docker-env)
+./gradlew build && docker compose build
+```
+
+현재 구현되어 있는 시스템에서 단일 실패 지점은 config-server 다 config-server가 정상적으로 작동하지 않으면 microservice, spring-cloud 의 모든 서비스가 동작하지 않는다
+
+현재 문제 liveness / readiness 에서는 80 으로 접근하는데 실제 서버에서는 8080 으로 포트가 설정됨 
+
+```aiignore
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: config-server
+  labels:
+    app.kubernetes.io/name: config-server
+    helm.sh/chart: config-server-1.0.0
+    app.kubernetes.io/managed-by: Helm
+data:
+  {}
+```
+
+현재 보면 설정 파일을 읽어들이지 못함
+
+---
+
+결론
+질문하신 경로의 config-repo는 심볼릭 링크이며, 다음을 가리킵니다:
+•
+실제 대상: 프로젝트 루트의 config-repo 디렉터리
+•
+해석 경로: kubernetes/helm/components/config-server/config-repo → ../../../../config-repo → <프로젝트_루트>/config-repo
+증거:
+•
+파일 내용이 한 줄로 ../../../../config-repo인 것은 Git에 저장된 심볼릭 링크(모드 120000)의 전형적인 형태입니다.
+•
+Helm 템플릿에서 .Files.Glob "config-repo/*"를 사용하고 있어, 차트 루트 기준의 config-repo(= 해당 심볼릭 링크) 아래 파일들을 읽습니다.
+확인 방법들
+다음 중 편한 방법으로 실제 가리키는 경로를 확인할 수 있습니다.
+•
+Linux/WSL에서
+# 링크가 어디를 가리키는지(상대경로)
+readlink kubernetes/helm/components/config-server/config-repo
+
+# 절대경로로 확인
+readlink -f kubernetes/helm/components/config-server/config-repo
+
+# ls로도 링크 대상 확인
+ls -l kubernetes/helm/components/config-server | grep config-repo
+•
+Windows PowerShell에서
+# 링크 메타데이터 확인
+Get-Item .\kubernetes\helm\components\config-server\config-repo | \
+Select-Object FullName, LinkType, Target
+
+# 혹은 재파스 포인트로 검색
+Get-ChildItem .\kubernetes\helm\components\config-server -Attributes ReparsePoint
+참고: \\wsl.localhost\Ubuntu-24.04\... 경로를 직접 지정해도 됩니다.
+•
+Git 메타데이터로 확인(운영체제 무관)
+git ls-files -s kubernetes/helm/components/config-server/config-repo
+# 모드가 120000이면 symlink, blob 내용이 상대경로(../../../../config-repo)입니다.
+
+# 트리에서 보기
+git ls-tree HEAD kubernetes/helm/components/config-server/config-repo
+Helm 차트에서 실제로 읽히는지 검증
+config-repo 아래 파일들이 ConfigMap에 포함되는지 템플릿 렌더링으로 확인합니다.
+# 차트 루트는 components/config-server
+helm template kubernetes/helm/components/config-server \
+--show-only templates/configmap_from_file.yaml
+렌더 결과의 data: 섹션에 <프로젝트_루트>/config-repo 아래의 *.yml/*.yaml/기타 파일 내용이 키-값으로 포함되어 나오면 정상입니다. (템플릿: kubernetes/helm/common/templates/_configmap_from_file.yaml의 (.Files.Glob "config-repo/*").AsConfig 로딩)
+
+
+kubernetes/helm/components/config-server/config-repo 파일은 심볼릭 링크이며 별도로 생성해 주어야 한다
+ln -s $(cat config-repo) config-repo
+

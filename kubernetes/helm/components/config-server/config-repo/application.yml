@@ -1,0 +1,88 @@
+app:
+  eureka-username: u
+  eureka-password: '{cipher}bf298f6d5f878b342f9e44bec08cb9ac00b4ce57e98316f030194a225fac89fb' #guest
+  eureka-server: localhost
+  auth-server: localhost
+
+eureka:
+  client:
+    serviceUrl:
+      defaultZone: "http://${app.eureka-username}:${app.eureka-password}@${app.eureka-server}:8761/eureka/"
+
+    # Eureka 서버 연결 재시도 설정
+    initialInstanceInfoReplicationIntervalSeconds: 5
+    registryFetchIntervalSeconds: 5
+
+    # 최초 연결 실패 시 재시도
+    registry-fetch-retry-max-attempts: 10
+    registry-fetch-retry-interval-seconds: 5
+  instance:
+    leaseRenewalIntervalInSeconds: 5
+    leaseExpirationDurationInSeconds: 5
+
+# Spring Boot 재시도 설정
+spring:
+  cloud:
+    loadbalancer:
+      retry:
+        enabled: true
+
+spring.rabbitmq:
+  host: 127.0.0.1
+  port: 5672
+  username: guest
+  password: '{cipher}17fcf0ae5b8c5cf87de6875b699be4a1746dd493a99d926c7a26a68c422117ef' #guest
+
+spring.cloud.stream.kafka.binder:
+  brokers: 127.0.0.1
+  defaultBrokerPort: 9092
+
+spring.cloud.stream.defaultBinder: rabbit
+management.tracing.sampling.probability: 1.0 # 미 설정시 기본 10%
+management.zipkin.tracing.endpoint: http://localhost:9411/api/v2/spans
+management:
+  tracing:
+    propagation:
+      type:
+        - w3c
+        - b3
+        - b3_multi
+
+# WARNING: Exposing all management endpoints over http should only be used during development, must be locked down in production!
+management.endpoint.health.show-details: "ALWAYS"
+management.endpoints.web.exposure.include: "*"
+
+# k8s readiness, liveness probe 대응
+# 아래 설정은 rabbitmq, db, mongodb health check 를 하도록 설정
+management.endpoint.health.probes.enabled: true
+management.endpoint.health.group.readiness.include: rabbit, db, mongo
+
+# graceful shutdown 설정
+# 추가 요청은 더이상 받지 않고 이전에 완료되지 못한 요청만 처리한다음 서버 종료
+# spring.lifecycle.timeout-per-shutdown-phase 설정시까지 완료되지 못한 요청은 강제 종료처리
+server.shutdown: graceful
+spring.lifecycle.timeout-per-shutdown-phase: 10s
+
+---
+spring.config.activate.on-profile: docker
+
+spring.rabbitmq.host: rabbitmq
+
+spring.cloud.stream.kafka.binder.brokers: kafka
+
+app:
+  eureka-server: eureka
+  auth-server: auth-server
+
+management.zipkin.tracing.endpoint: http://zipkin:9411/api/v2/spans
+
+---
+spring.config.activate.on-profile: kafka
+
+management.health.rabbit.enabled: false
+spring.cloud.stream.defaultBinder: kafka
+spring.kafka.bootstrap-servers: kafka:9092
+spring.cloud.stream.kafka.binder.replication-factor: 1
+
+# Zipkin over Kafka 설정: 애플리케이션이 스팬을 Kafka 'zipkin' 토픽으로 전송하도록 부트스트랩 서버 지정
+zipkin.kafka.bootstrap-servers: kafka:9092

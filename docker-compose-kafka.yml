@@ -185,7 +185,7 @@ services:
       - SPRING_SECURITY_USER_NAME=${CONFIG_SERVER_USR}
       - SPRING_SECURITY_USER_PASSWORD=${CONFIG_SERVER_PWD}
     volumes:
-      - $PWD/config-repo:/config-repo
+      - $PWD/config-repo-txt:/config-repo-txt
 
   zipkin:
     image: openzipkin/zipkin:2.23.2
