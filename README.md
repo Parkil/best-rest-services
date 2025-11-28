@@ -321,6 +321,12 @@ helm 에서 yml 파일을 읽어서 바로 helm 설정 파일로 변환
 {{- with merge $noValues $overrides $common -}}
 ```
 
+minikube docker
+```bash
+eval $(minikube docker-env)
+./gradlew build && docker compose build
+```
+
 helm yaml 확인 (docker-compose config 와 유사)
 ```
 helm template components/gateway -s templates/service.yaml
@@ -346,11 +352,7 @@ kubectl config set-context $(kubectl config current-context) --namespace=hands-o
 kubectl delete namespace hands-on
 ```
 
-minikube docker 
-```bash
-eval $(minikube docker-env)
-./gradlew build && docker compose build
-```
+
 
 현재 구현되어 있는 시스템에서 단일 실패 지점은 config-server 다 config-server가 정상적으로 작동하지 않으면 microservice, spring-cloud 의 모든 서비스가 동작하지 않는다
 
