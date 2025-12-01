@@ -97,7 +97,7 @@ spring.cloud.stream:
         headerPatterns: "*"
         required-groups: auditGroup
 
-spring.security.oauth2.resourceserver.jwt.issuer-uri: http://${app.auth-server}:9999
+spring.security.oauth2.resourceserver.jwt.issuer-uri: http://${app.auth-server}
 
 management:
   health:

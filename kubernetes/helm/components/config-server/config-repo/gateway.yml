@@ -80,7 +80,7 @@ spring.cloud.gateway.routes:
   filters:
   - SetPath=/501
 
-spring.security.oauth2.resourceserver.jwt.issuer-uri: http://${app.auth-server}:9999
+spring.security.oauth2.resourceserver.jwt.issuer-uri: http://${app.auth-server}
 
 # Micrometer Tracing (replaces Sleuth)
 # Reactor instrumentation is enabled by default in Spring Boot 3.x
