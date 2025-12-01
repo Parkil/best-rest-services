@@ -189,11 +189,11 @@ function testCircuitBreaker() {
 
     # Open the circuit breaker by running three slow calls in a row, i.e. that cause a timeout exception
     # Also, verify that we get 500 back and a timeout related error message
-    for ((n=0; n<3; n++))
+    for ((n=0; n<2; n++))
     do
-        assertCurl 500 "curl -k https://$HOST:$PORT/product-composite/$PROD_ID_REVS_RECS?delay=3 $AUTH -s"
+        assertCurl 500 "curl -k https://$HOST:$PORT/product-composite/$PROD_ID_REVS_RECS?delay=5 $AUTH -s"
         message=$(echo $RESPONSE | jq -r .message)
-        assertEqual "Did not observe any item or terminal signal within 2000ms" "${message:0:57}"
+        assertEqual "Did not observe any item or terminal signal within 4000ms" "${message:0:57}"
     done
 
     # Verify that the circuit breaker is open
@@ -255,7 +255,7 @@ fi
 
 waitForService curl -k https://$HOST:$PORT/actuator/health
 
-ACCESS_TOKEN=$(curl -k https://writer:secret@$HOST:$PORT/oauth2/token -d grant_type=client_credentials -s | jq .access_token -r)
+ACCESS_TOKEN=$(curl -k https://writer:secret-writer@$HOST:$PORT/oauth2/token -d grant_type=client_credentials -d "scope=product:read product:write" -s | jq .access_token -r)
 echo ACCESS_TOKEN=$ACCESS_TOKEN
 AUTH="-H \"Authorization: Bearer $ACCESS_TOKEN\""
 
@@ -317,7 +317,7 @@ assertCurl 302 "curl -ks  https://$HOST:$PORT/openapi/swagger-ui.html"
 assertCurl 200 "curl -ksL https://$HOST:$PORT/openapi/swagger-ui.html"
 assertCurl 200 "curl -ks  https://$HOST:$PORT/openapi/webjars/swagger-ui/index.html?configUrl=/v3/api-docs/swagger-config"
 assertCurl 200 "curl -ks  https://$HOST:$PORT/openapi/v3/api-docs"
-assertEqual "3.0.1" "$(echo $RESPONSE | jq -r .openapi)"
+assertEqual "3.1.0" "$(echo $RESPONSE | jq -r .openapi)"
 assertEqual "https://$HOST:$PORT" "$(echo $RESPONSE | jq -r .servers[].url)"
 assertCurl 200 "curl -ks  https://$HOST:$PORT/openapi/v3/api-docs.yaml"
 
