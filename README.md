@@ -251,6 +251,7 @@ service 는 network endpoint 를 담당
 
 실습을 위해 minikube + kubectl 을 이용
 
+minikube start
 ```bash
 minikube start --profile=test --memory=10240 --cpus=4 --disk-size=20g --ports=8080:80 --ports=8443:443 --ports=30080:30080 --ports=30443:30443
 
@@ -352,6 +353,33 @@ kubectl config set-context $(kubectl config current-context) --namespace=hands-o
 kubectl delete namespace hands-on
 ```
 
+create - mq
+delete - mq
+get - url call
+```aiignore
+
+2025-12-01T06:07:04.539Z DEBUG 1 --- [product-composite] [    parallel-14] [                                                 ] s.m.m.c.p.s.ProductCompositeIntegration  : request(unbounded)
+2025-12-01T06:07:04.593Z  WARN 1 --- [product-composite] [    parallel-14] [                                                 ] o.s.c.l.core.RoundRobinLoadBalancer      : No servers available for service: product
+2025-12-01T06:07:04.594Z  WARN 1 --- [product-composite] [    parallel-14] [                                                 ] ryableLoadBalancerExchangeFilterFunction : LoadBalancer does not contain an instance for the service product
+2025-12-01T06:07:04.609Z  WARN 1 --- [product-composite] [    parallel-14] [                                                 ] s.m.m.c.p.s.ProductCompositeIntegration  : Error calling product service: org.springframework.web.reactive.function.client.WebClientResponseException$ServiceUnavailable: 503 Service Unavailable from UNKNOWN 
+2025-12-01T06:07:04.619Z  WARN 1 --- [product-composite] [    parallel-14] [                                                 ] s.m.m.c.p.s.ProductCompositeIntegration  : Got an unexpected HTTP error: 503 SERVICE_UNAVAILABLE, will rethrow it
+2025-12-01T06:07:04.620Z  WARN 1 --- [product-composite] [    parallel-14] [                                                 ] s.m.m.c.p.s.ProductCompositeIntegration  : Error body: LoadBalancer does not contain an instance for the service product
+2025-12-01T06:07:04.620Z DEBUG 1 --- [product-composite] [    parallel-14] [                                                 ] s.m.m.c.p.s.ProductCompositeIntegration  : onError(org.springframework.web.reactive.function.client.WebClientResponseException$ServiceUnavailable: 503 Service Unavailable from UNKNOWN )
+2025-12-01T06:07:04.620Z DEBUG 1 --- [product-composite] [    parallel-14] [                                                 ] s.m.m.c.p.s.ProductCompositeIntegration  : 
+
+```
+
+위 오류 메시지를 보면 LoadBalancer 에서 product 를 인식하지 못함
+@LoadBalanced 어노테이션을 붙이면 lb:// + eureka 를 무조건 써야되는듯 @LoadBalanced + eureka 를 안썼을때만 위 오류가 발생
+-> 실제 url 이 접속이 되는지 여부와는 상관없이 webclient + 로드맬런서에서 인식을 하느냐 유무이기 때문에 실제로는 접속이 되어도 오류가 발생 할 수 있다
+
+test 실행
+```bash
+HOST=$MINIKUBE_HOST PORT=30443 ./test-em-all.bash
+
+HOST=localhost PORT=30443 ./test-em-all.bash
+```
+
 
 
 현재 구현되어 있는 시스템에서 단일 실패 지점은 config-server 다 config-server가 정상적으로 작동하지 않으면 microservice, spring-cloud 의 모든 서비스가 동작하지 않는다
@@ -373,6 +401,8 @@ data:
 ```
 
 현재 보면 설정 파일을 읽어들이지 못함
+
+helm 에서는 외부 파일 경로를 읽어 들이는게 제한되기 때문에 chart에 포함되지 않는 외부 파일을 읽어야 하는 경우 chart 내부로 복사한 다음 사용
 
 ---
 
@@ -426,3 +456,4 @@ helm template kubernetes/helm/components/config-server \
 kubernetes/helm/components/config-server/config-repo 파일은 심볼릭 링크이며 별도로 생성해 주어야 한다
 ln -s $(cat config-repo) config-repo
 
+k8s 설정 테스트시 delete, create 는 정상적으로 되는데 get이 안된다?
