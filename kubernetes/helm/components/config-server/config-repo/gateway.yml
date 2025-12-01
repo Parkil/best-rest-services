@@ -14,31 +14,19 @@ spring.cloud.gateway.routes:
   - Path=/product-composite/**
 
 - id: oauth2-server
-  uri: http://auth-server
+  uri: http://${app.auth-server}
   predicates:
   - Path=/oauth2/**
-  filters:
-    - PreserveHostHeader
-    - SetRequestHeader=X-Forwarded-Proto, https
-    - SetRequestHeader=X-Forwarded-Port, 8443
 
 - id: oauth2-login
-  uri: http://auth-server
+  uri: http://${app.auth-server}
   predicates:
   - Path=/login/**
-  filters:
-    - PreserveHostHeader
-    - SetRequestHeader=X-Forwarded-Proto, https
-    - SetRequestHeader=X-Forwarded-Port, 8443
 
 - id: oauth2-error
-  uri: http://auth-server
+  uri: http://${app.auth-server}
   predicates:
   - Path=/error/**
-  filters:
-    - PreserveHostHeader
-    - SetRequestHeader=X-Forwarded-Proto, https
-    - SetRequestHeader=X-Forwarded-Port, 8443
 
 - id: product-composite-swagger-ui
   uri: http://product-composite
@@ -57,40 +45,7 @@ spring.cloud.gateway.routes:
   filters:
   - RewritePath=/config/(?<segment>.*), /$\{segment}
 
-- id: host_route_200
-  uri: http://httpstat.us
-  predicates:
-  - Host=i.feel.lucky:8080
-  - Path=/headerrouting/**
-  filters:
-  - SetPath=/200
-
-- id: host_route_418
-  uri: http://httpstat.us
-  predicates:
-  - Host=im.a.teapot:8080
-  - Path=/headerrouting/**
-  filters:
-  - SetPath=/418
-
-- id: host_route_501
-  uri: http://httpstat.us
-  predicates:
-  - Path=/headerrouting/**
-  filters:
-  - SetPath=/501
-
 spring.security.oauth2.resourceserver.jwt.issuer-uri: http://${app.auth-server}
-
-# Micrometer Tracing (replaces Sleuth)
-# Reactor instrumentation is enabled by default in Spring Boot 3.x
-# Set propagation type if B3 headers are needed for Zipkin compatibility
-management:
-  tracing:
-    propagation:
-      type:
-        - w3c
-        - b3
 
 logging:
   level:
@@ -99,4 +54,26 @@ logging:
     org.springframework.cloud.gateway: TRACE
     org.springframework.web.server.adapter.HttpWebHandlerAdapter: TRACE
 
-management.endpoint.health.group.readiness.include: ping
+management:
+  tracing:
+    propagation:
+      type:
+        - w3c
+        - b3
+  endpoint:
+    health:
+      show-details: always
+      show-components: always
+      group:
+        readiness:
+          include: ping, healthcheckMicroservices
+
+---
+spring.config.activate.on-profile: prod
+
+logging:
+  level:
+    root: WARN
+    org.springframework.cloud.gateway.route.RouteDefinitionRouteLocator: WARN
+    org.springframework.cloud.gateway: WARN
+    org.springframework.web.server.adapter.HttpWebHandlerAdapter: WARN
