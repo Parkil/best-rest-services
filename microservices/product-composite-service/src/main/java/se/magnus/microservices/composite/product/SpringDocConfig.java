@@ -14,7 +14,7 @@ import io.swagger.v3.oas.annotations.servers.Server;
  */
 @OpenAPIDefinition(
         servers = {
-                @Server(url = "https://localhost:8443", description = "Local-Server")
+                @Server(url = "https://localhost:30443", description = "Local-Server")
         }
 )
 public class SpringDocConfig {}
