@@ -378,6 +378,8 @@ test 실행
 HOST=$MINIKUBE_HOST PORT=30443 ./test-em-all.bash
 
 HOST=localhost PORT=30443 ./test-em-all.bash
+
+HOST=localhost PORT=30443 USE_K8S=true ./test-em-all.bash
 ```
 
 
