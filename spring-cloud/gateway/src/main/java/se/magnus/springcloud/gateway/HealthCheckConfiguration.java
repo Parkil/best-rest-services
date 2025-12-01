@@ -1,18 +1,21 @@
 package se.magnus.springcloud.gateway;
 
-import static java.util.logging.Level.FINE;
-
-import java.util.LinkedHashMap;
-import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.actuate.health.*;
+import org.springframework.boot.actuate.health.CompositeReactiveHealthContributor;
+import org.springframework.boot.actuate.health.Health;
+import org.springframework.boot.actuate.health.ReactiveHealthContributor;
+import org.springframework.boot.actuate.health.ReactiveHealthIndicator;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
+
+import java.util.LinkedHashMap;
+import java.util.Map;
+
+import static java.util.logging.Level.FINE;
 
 @Configuration
 public class HealthCheckConfiguration {
@@ -20,12 +23,6 @@ public class HealthCheckConfiguration {
   private static final Logger LOG = LoggerFactory.getLogger(HealthCheckConfiguration.class);
 
   private final WebClient webClient;
-
-  @Value("${spring.security.oauth2.resourceserver.jwt.issuer-uri}")
-  private String issuerUri;
-
-  @Value("${app.eureka-server}")
-  private String appEurekaServer;
 
 
   @Autowired
@@ -35,9 +32,6 @@ public class HealthCheckConfiguration {
 
   @Bean
   ReactiveHealthContributor healthcheckMicroservices() {
-    LOG.info("issuerUri : {}", issuerUri);
-    LOG.info("appEurekaServer : {}", appEurekaServer);
-
     final Map<String, ReactiveHealthIndicator> registry = new LinkedHashMap<>();
 
     registry.put("product",           () -> getHealth("http://product"));
