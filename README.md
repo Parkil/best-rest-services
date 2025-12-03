@@ -249,6 +249,8 @@ pod <-> deployment <-> service <-> ingress
 
 service 는 network endpoint 를 담당
 
+siege : cli 기반 부하 테스트 도구
+
 실습을 위해 minikube + kubectl 을 이용
 
 minikube start
@@ -459,3 +461,37 @@ kubernetes/helm/components/config-server/config-repo 파일은 심볼릭 링크�
 ln -s $(cat config-repo) config-repo
 
 k8s 설정 테스트시 delete, create 는 정상적으로 되는데 get이 안된다?
+
+---
+
+staging & prod 설정
+
+k8s cluster 외부에서 자원 관리자를 실행 할 수 있어야한다 - stateful set, persistenceVolume 사용
+actuator 외부 접근 차단
+log level 제한
+외부에서 접근해서는 안되는 endpoint 차단(config-server, actuator)
+docker image tag 에 부가 정보 설정(버전 등...)
+
+
+```aiignore
+{{- define "common.secrets" -}}
+{{- range $secretName, $secretMap := .Values.secrets }}
+apiVersion: v1
+kind: Secret
+metadata:
+  name: {{ $secretName }}
+  labels:
+    app.kubernetes.io/name: {{ $secretName }}
+    helm.sh/chart: {{ include "common.chart" $ }}
+    app.kubernetes.io/managed-by: {{ $.Release.Service }}
+type: Opaque
+data:
+{{- range $key, $val := $secretMap }}
+  {{ $key }}: {{ $val | b64enc }}
+{{- end }}
+---
+{{- end -}}
+{{- end -}}
+```
+
+--- 가 없으면 helm template 이 정상적으로 작동하지 않는다. loop 를 사용하면 반드시 --- 로 구분을 해주어야 함
