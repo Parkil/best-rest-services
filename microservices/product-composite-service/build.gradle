@@ -37,10 +37,6 @@ dependencies {
     implementation 'org.springdoc:springdoc-openapi-starter-webflux-ui:2.8.9'
     implementation 'org.springframework.cloud:spring-cloud-starter-loadbalancer'
 
-    // config 서버 설정
-    implementation 'org.springframework.cloud:spring-cloud-starter-config'
-    implementation 'org.springframework.retry:spring-retry'
-
     implementation "io.github.resilience4j:resilience4j-spring-boot3:${resilience4jVersion}"
     implementation "io.github.resilience4j:resilience4j-reactor:${resilience4jVersion}"
 
@@ -51,7 +47,6 @@ dependencies {
     implementation 'io.micrometer:micrometer-tracing-bridge-brave'
     implementation 'io.zipkin.reporter2:zipkin-reporter-brave'
 
-    testImplementation 'org.springframework.cloud:spring-cloud-starter-config'
     testImplementation 'org.springframework.retry:spring-retry'
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testImplementation 'org.springframework.cloud:spring-cloud-stream-test-binder:4.3.0'

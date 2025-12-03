@@ -7,10 +7,10 @@ image:
   pullPolicy: IfNotPresent
   args:
     - "--ignore-db-dir=lost+found"
+
 ports:
   - containerPort: 3306
 
 service:
   ports:
     - port: 3306
-

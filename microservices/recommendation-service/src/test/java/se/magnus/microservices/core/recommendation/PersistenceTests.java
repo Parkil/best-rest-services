@@ -17,7 +17,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-@DataMongoTest(properties = {"spring.cloud.config.enabled=false"})
+@DataMongoTest
 class PersistenceTests extends MongoDbTestBase {
 
   @Autowired

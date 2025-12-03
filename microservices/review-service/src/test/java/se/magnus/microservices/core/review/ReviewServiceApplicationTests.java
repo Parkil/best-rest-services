@@ -22,8 +22,7 @@ import se.magnus.microservices.core.review.persistence.ReviewRepository;
 
 @SpringBootTest(webEnvironment = RANDOM_PORT, properties = {
   "spring.cloud.stream.defaultBinder=rabbit",
-  "logging.level.se.magnus=DEBUG",
-  "spring.cloud.config.enabled=false"})
+  "logging.level.se.magnus=DEBUG"})
 class ReviewServiceApplicationTests extends MySqlTestBase {
 
   @Autowired

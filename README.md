@@ -495,3 +495,7 @@ data:
 ```
 
 --- 가 없으면 helm template 이 정상적으로 작동하지 않는다. loop 를 사용하면 반드시 --- 로 구분을 해주어야 함
+
+---
+
+spring-config-server -> k8s secret, configMap 으로 변경 

@@ -13,10 +13,3 @@ spring:
 
 ---
 spring.config.activate.on-profile: docker
-
-spring:
-  config:
-    import: "configserver:"
-  cloud:
-    config:
-      uri: http://config-server:8888

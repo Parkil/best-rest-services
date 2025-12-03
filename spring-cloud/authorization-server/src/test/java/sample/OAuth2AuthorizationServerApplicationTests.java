@@ -16,25 +16,18 @@
  */
 package sample;
 
-import static java.nio.charset.StandardCharsets.UTF_8;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
-
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.web.servlet.MockMvc;
 
-import java.util.Base64;
-
 /**
  * Tests for {@link OAuth2AuthorizationServerApplication}.
  *
  * @author Josh Cummings
  */
-@SpringBootTest(properties = {"spring.cloud.config.enabled=false"})
+@SpringBootTest
 @AutoConfigureMockMvc
 class OAuth2AuthorizationServerApplicationTests {
 
