@@ -86,3 +86,10 @@ spring.cloud.stream.kafka.binder.replication-factor: 1
 
 # Zipkin over Kafka 설정: 애플리케이션이 스팬을 Kafka 'zipkin' 토픽으로 전송하도록 부트스트랩 서버 지정
 zipkin.kafka.bootstrap-servers: kafka:9092
+
+---
+spring.config.activate.on-profile: prod
+spring.rabbitmq.host: 172.17.0.1
+
+# Only allow management endpoints over http in production for info, health and circuitbreakerevents
+management.endpoints.web.exposure.include: health,info,circuitbreakerevents
