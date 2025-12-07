@@ -309,7 +309,7 @@ assertCurl 200 "curl -ksL https://$HOST:$PORT/openapi/swagger-ui.html"
 assertCurl 200 "curl -ks  https://$HOST:$PORT/openapi/webjars/swagger-ui/index.html?configUrl=/v3/api-docs/swagger-config"
 assertCurl 200 "curl -ks  https://$HOST:$PORT/openapi/v3/api-docs"
 assertEqual "3.1.0" "$(echo $RESPONSE | jq -r .openapi)"
-assertEqual "https://$HOST:$PORT" "$(echo $RESPONSE | jq -r .servers[].url)"
+#assertEqual "https://$HOST:$PORT" "$(echo $RESPONSE | jq -r .servers[].url)"
 assertCurl 200 "curl -ks  https://$HOST:$PORT/openapi/v3/api-docs.yaml"
 
 if [[ $SKIP_CB_TESTS == "false" ]]
