@@ -20,10 +20,6 @@ dependencies {
 
     implementation project(':api')
     implementation 'org.springframework.boot:spring-boot-starter-webflux'
-    // Zipkin Kafka Sender to publish tracing spans to Kafka when configured
-    implementation 'io.zipkin.reporter2:zipkin-sender-kafka'
-    // Zipkin Reporter (provides Reporter/AsyncReporter and zipkin2 model classes)
-    implementation 'io.zipkin.reporter2:zipkin-reporter-brave'
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
 }
 

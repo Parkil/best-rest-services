@@ -516,3 +516,14 @@ k8s 에서 구버전의 경우 apiVersion 에서 v1 / v1beta 를 혼용했지만
 이때문에 k8s를 최신버전으로 설치한 상태에서 add-on 을 구버전으로 설치하면 구 버전에서는 yaml 을 v1beta 로 사용하기 때문에 설치가 안되는 문제가 발샐 할 수 있다
 
 PC 재부팅후 minikube 를 실행시키면 기존에 실행되던 pod, service, cert 가 전부 유지된다
+
+--- 
+
+service mesh
+
+- istio
+- linkerd
+- 
+
+간단하게 이야기 하면 MSA 전체 트래픽을 모니터링하는 도구라고 이해하면 될듯
+

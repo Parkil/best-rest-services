@@ -10,15 +10,6 @@ spring.cloud.stream.kafka.binder:
   defaultBrokerPort: 9092
 
 spring.cloud.stream.defaultBinder: rabbit
-management.tracing.sampling.probability: 1.0 # 미 설정시 기본 10%
-management.zipkin.tracing.endpoint: http://localhost:9411/api/v2/spans
-management:
-  tracing:
-    propagation:
-      type:
-        - w3c
-        - b3
-        - b3_multi
 
 # WARNING: Exposing all management endpoints over http should only be used during development, must be locked down in production!
 management.endpoint.health.show-details: "ALWAYS"
@@ -46,8 +37,6 @@ app:
   eureka-server: eureka
   auth-server: auth-server
 
-management.zipkin.tracing.endpoint: http://zipkin:9411/api/v2/spans
-
 ---
 spring.config.activate.on-profile: kafka
 
@@ -55,9 +44,6 @@ management.health.rabbit.enabled: false
 spring.cloud.stream.defaultBinder: kafka
 spring.kafka.bootstrap-servers: kafka:9092
 spring.cloud.stream.kafka.binder.replication-factor: 1
-
-# Zipkin over Kafka 설정: 애플리케이션이 스팬을 Kafka 'zipkin' 토픽으로 전송하도록 부트스트랩 서버 지정
-zipkin.kafka.bootstrap-servers: kafka:9092
 
 ---
 spring.config.activate.on-profile: prod

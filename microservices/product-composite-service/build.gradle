@@ -43,10 +43,6 @@ dependencies {
     // Micrometer (메트릭 수집)
     implementation 'io.micrometer:micrometer-registry-prometheus'
 
-    // Micrometer Tracing + Zipkin (분산 추적)
-    implementation 'io.micrometer:micrometer-tracing-bridge-brave'
-    implementation 'io.zipkin.reporter2:zipkin-reporter-brave'
-
     testImplementation 'org.springframework.retry:spring-retry'
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testImplementation 'org.springframework.cloud:spring-cloud-stream-test-binder:4.3.0'

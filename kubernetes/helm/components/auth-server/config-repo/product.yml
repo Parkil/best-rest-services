@@ -23,7 +23,6 @@ spring.cloud.stream.bindings.messageProcessor-in-0.consumer:
 spring.cloud.stream.rabbit.bindings.messageProcessor-in-0.consumer:
   autoBindDlq: true
   republishToDlq: true
-  # Zipkin 트레이싱 헤더들이 소비 시 보존되도록 전체 헤더 허용
   headerPatterns: "*"
 
 spring.cloud.stream.kafka.bindings.messageProcessor-in-0.consumer:
@@ -35,10 +34,6 @@ logging:
     se.magnus: DEBUG
     org.springframework.data.mongodb.core.ReactiveMongoTemplate: DEBUG
 
-# Zipkin / Tracing 설정 (게이트웨이 -> 컴포지트 -> 코어 마이크로서비스까지 연계)
-management.tracing.sampling.probability: 1.0
-management.zipkin.tracing.endpoint: http://localhost:9411/api/v2/spans
-
 ---
 spring.config.activate.on-profile: docker
 
@@ -47,9 +42,6 @@ server.port: 80
 spring.data.mongodb.host: mongodb
 
 management.endpoint.health.group.readiness.include: ping, mongo
-
-# Docker 환경에서 Zipkin 엔드포인트
-management.zipkin.tracing.endpoint: http://zipkin:9411/api/v2/spans
 
 ---
 spring.config.activate.on-profile: streaming_partitioned

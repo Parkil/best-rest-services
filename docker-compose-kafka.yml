@@ -187,17 +187,6 @@ services:
     volumes:
       - $PWD/config-repo-txt:/config-repo-txt
 
-  zipkin:
-    image: openzipkin/zipkin:2.23.2
-    mem_limit: 1024m
-    environment:
-      - STORAGE_TYPE=mem
-      - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
-    ports:
-      - "9411:9411"
-    depends_on:
-      - kafka
-
   # Kafka 토픽/컨슈머/메시지 등을 UI 로 확인할 수 있는 Kafdrop 추가
   kafdrop:
     image: obsidiandynamics/kafdrop:latest
