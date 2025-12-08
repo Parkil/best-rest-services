@@ -527,3 +527,18 @@ service mesh
 
 간단하게 이야기 하면 MSA 전체 트래픽을 모니터링하는 도구라고 이해하면 될듯
 
+k8s 에 istio 설치 (1.28.1)
+```bash
+istioctl install --skip-confirmation --set profile=demo --set meshConfig.accessLogFile=/dev/stdout --set meshConfig.accessLogEncoding=JSON
+```
+
+```bash
+kubectl -n istio-system wait --timeout=300s --for=condition=available deploy --all
+```
+
+```bash
+kubectl apply -n istio-system -f https://github.com/istio/istio/blob/master/samples/addons/kiali.yaml
+kubectl apply -n istio-system -f https://github.com/istio/istio/blob/master/samples/addons/jaeger.yaml
+kubectl apply -n istio-system -f https://github.com/istio/istio/blob/master/samples/addons/prometheus.yaml
+kubectl apply -n istio-system -f https://github.com/istio/istio/blob/master/samples/addons/grafana.yaml
+```
