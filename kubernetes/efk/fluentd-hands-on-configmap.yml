@@ -18,11 +18,39 @@ data:
     <match kubernetes.**hands-on**>
       @type rewrite_tag_filter
       <rule>
+        key $.kubernetes.container_name
+        pattern /^rabbitmq$/
+        tag rabbitmq.${tag}
+      </rule>
+      <rule>
         key log
         pattern ^(.*)$
         tag spring-boot.${tag}
       </rule>
     </match>
+
+    <match rabbitmq.**>
+      @type rewrite_tag_filter
+      <rule>
+        key log
+        pattern /^\d{4}-\d{2}-\d{2}\s\d{2}:\d{2}:\d{2}\.\d{3}.*/
+        tag parse.rabbitmq.${tag}
+      </rule>
+      <rule>
+        key log
+        pattern /^.*/
+        tag check.exception.${tag}
+      </rule>
+    </match>
+
+    <filter parse.rabbitmq.**>
+      @type parser
+      key_name log
+      time_key time
+      time_format %Y-%m-%d %H:%M:%S.%N
+      reserve_data true
+      format /^(?<time>\d{4}-\d{2}-\d{2}\s\d{2}:\d{2}:\d{2}\.\d{3})\s+\[(?<level>[^\]]+)\]\s+<(?<pid>[^>]+)>\s+(?<log>.*)$/
+    </filter>
 
     <match spring-boot.**>
       @type rewrite_tag_filter
@@ -53,5 +81,5 @@ data:
       time_format %Y-%m-%d %H:%M:%S.%N
       reserve_data true
       # Sample log message: 2021-03-27 13:07:28.642 DEBUG [product-composite,395ab9670bc9685096dddd66836d02e1,f32eb266bd1ff9a3] 1 --- [or-http-epoll-1] s.m.u.h.GlobalControllerExceptionHandler : Returning HTTP status: 404 NOT_FOUND for path: /product-composite/13, message: Product Id: 13 not found
-      format /^(?<time>\d{4}-\d{2}-\d{2}\s\d{2}:\d{2}:\d{2}\.\d{3})\s+(?<spring.level>[^\s]+)\s+(\[(?<spring.service>[^,]*),(?<spring.trace>[^,]*),(?<spring.span>[^\]]*)]*\])\s+(?<spring.pid>\d+)\s+---\s+\[\s*(?<spring.thread>[^\]]+)\]\s+(?<spring.class>[^\s]+)\s*:\s+(?<log>.*)$/
+      format /^(?<time>\d{4}-\d{2}-\d{2}\s\d{2}:\d{2}:\d{2}\.\d{3})\s+(?<spring.level>[^\s]+)\s+(\[(?<spring.service>[^,]*),(?<spring.trace>[^,]*),(?<spring.span>[^\]]*)]*\])\s+(?<spring.pid>\d+)\s+---\s+\[\s*(?<spring.thread>[^\]]+)\]\s+(?<spring.class>[^\s]+)\s*:\s+(?:Returning HTTP status: (?<http.response.status_code>\d{3}) [^ ]+ for path:.*|(?<log>.*))$/
     </filter>
