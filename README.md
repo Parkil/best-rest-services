@@ -353,6 +353,12 @@ helm install --dry-run --debug hands-on-dev-env kubernetes/helm/environments/dev
 kubectl config set-context $(kubectl config current-context) --namespace=hands-on
 
 kubectl delete namespace hands-on
+
+helm install hands-on-dev-env kubernetes/helm/environments/dev-env -n hands-on
+
+helm install logging-hands-on-add-on kubernetes/helm/environments/logging -n logging --create-namespace
+
+kubectl apply -f kubernetes/hands-on-namespace.yml 
 ```
 
 create - mq
@@ -542,3 +548,322 @@ kubectl apply -n istio-system -f https://github.com/istio/istio/blob/master/samp
 kubectl apply -n istio-system -f https://github.com/istio/istio/blob/master/samples/addons/prometheus.yaml
 kubectl apply -n istio-system -f https://github.com/istio/istio/blob/master/samples/addons/grafana.yaml
 ```
+
+``` bash
+helm upgrade --install istio-hands-on-addons kubernetes/helm/environments/istio-system -n istio-system --wait
+```
+
+k8s /etc/hosts 설정
+```bash
+INGRESS_IP=$(kubectl -n istio-system get service istio-ingressgateway -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
+
+MIKIKUBE_HOSTS="grafana.minikube.me tracing.minikube.me kiali.minikube.me prometheus.minikube.me minikube.me kibana.minikube.me elasticsearch.minikube.me mail.minikube.me health.minikube.me"
+
+echo "$INGRESS_IP $MIKIKUBE_HOSTS" | sudo tee -a /etc/hosts
+```
+
+접속 확인
+minikube tunnel 실행 후 netstat -tnlp | grep 443 으로 443, 80 포트가 열려 있는지 확인
+```bash
+curl -o /dev/null -sk -L -w "%{http_code}\n}" https://kiali.minikube.me/kiali
+curl -o /dev/null -sk -L -w "%{http_code}\n}" https://tracing.minikube.me
+curl -o /dev/null -sk -L -w "%{http_code}\n}" https://grafana.minikube.me
+curl -o /dev/null -sk -L -w "%{http_code}\n}" https://prometheus.minikube.me/graph#/
+```
+
+istio sidecar pod 를 자동으로 삽입하는 namespace 생성
+```yaml
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: hands-on
+  labels:
+    istio-injection: enabled
+```
+
+---
+
+#### ISTIO 상호 인증
+
+Client - Server / Service 간 인증서를 통해서 통신 전 인증을 수행
+
+##### 서버 쪽 설정
+```yaml
+apiVersion: security.istio.io/v1beta1
+kind: PeerAuthentication
+metadata:
+  name: default
+spec:
+  mtls:
+    mode: PERMISSIVE # TLS, Http 모두 허용
+```
+
+##### 클라이언트 쪽 설정
+```yaml
+apiVersion: networking.istio.io/v1beta1
+kind: DestinationRule
+metadata:
+  name: recommendation
+spec:
+  host: recommendation
+  trafficPolicy:
+    tls:
+      mode: ISTIO_MUTUAL
+```
+
+---
+
+ISTIO canary deploy : 특정 사용자만 신 버전으로 배포하고 나머지 사용자는 이전 버전을 계속 사용, 신버전을 사용하는 사용자가 승인을 하면 blue / green 배포 방식으로 나머지 사용자에게 배포가 가능
+blue / green deploy : 전체 사용자를 구/신 버전으로 일괄 전환. 전환한다고 해서 나머지 버전이 죽는 것은 아니기 때문에 오류가 발생한 경우 신속하게 다른 버전으로 전환하는 것이 가능
+
+지금까지 파악한 바로는 구버전 / 신버전 2개의 deployment 를 띄운다음(신, 구버전간에는 metadata 나 기타 label 등 이를 구별할수 있는 값이 지정되어야 한다) ingress 단에서 특정 조건에 따라서
+신,구 버전으로 연결된다고 하는거 같은데 
+
+책에서는 명시적으로 name 을 변경하지만 실제 운영환경에서는 배포할때마다 이름을 지정해서 할수 는 없을 듯한데
+
+prod-env 에 subset 설정이 있음
+
+#### ISTIO canary 설정
+
+```yaml
+apiVersion: networking.istio.io/v1beta1
+kind: DestinationRule
+metadata:
+  name: review
+spec:
+  host: review
+  subsets:
+  - labels:
+      version: v1
+    name: old
+  - labels:
+      version: v2
+    name: new
+  trafficPolicy:
+    tls:
+      mode: ISTIO_MUTUAL
+```
+label v1, v2 로 old, new 를 구분
+
+labels > v1 / v2 는 Deployment 의 metadata > labels > version 과 매치
+
+```yaml
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: review
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: review
+        app: review
+        version: v1
+```
+
+```yaml
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: recommendation
+spec:
+  hosts:
+  - recommendation
+  http:
+  - match:
+    - headers:
+        X-group:
+          exact: test
+    route:
+    - destination:
+        host: recommendation
+        subset: new
+  - route:
+    - destination:
+        host: recommendation
+        subset: old
+      weight: 100
+    - destination:
+        host: recommendation
+        subset: new
+      weight: 0
+```
+http header 에 x-group : test 가 있으면 DestinationRule 에 정의된 new 로 forwarding 하고 그외의 경우에는 old 버전으로만 (old weight 100, new weight 0) forwarding 
+
+---
+
+fluentd 설정
+
+```yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: fluentd-hands-on-config
+  namespace: kube-system
+data:
+  fluentd-hands-on.conf: |
+
+    <match kubernetes.**istio**>
+      @type rewrite_tag_filter
+      <rule>
+        key log
+        pattern ^(.*)$
+        tag istio.${tag}
+      </rule>
+    </match>
+
+    <match kubernetes.**hands-on**>
+      @type rewrite_tag_filter
+      <rule>
+        key log
+        pattern ^(.*)$
+        tag spring-boot.${tag}
+      </rule>
+    </match>
+
+    <match spring-boot.**>
+      @type rewrite_tag_filter
+      <rule>
+        key log
+        pattern /^\d{4}-\d{2}-\d{2}\s\d{2}:\d{2}:\d{2}\.\d{3}.*/
+        tag parse.${tag}
+      </rule>
+      <rule>
+        key log
+        pattern /^.*/
+        tag check.exception.${tag}
+      </rule>
+    </match>
+
+    <match check.exception.spring-boot.**>
+      @type detect_exceptions
+      languages java
+      remove_tag_prefix check
+      message log
+      multiline_flush_interval 5
+    </match>
+
+    <filter parse.spring-boot.**>
+      @type parser
+      key_name log
+      time_key time
+      time_format %Y-%m-%d %H:%M:%S.%N
+      reserve_data true
+      # Sample log message: 2021-03-27 13:07:28.642 DEBUG [product-composite,395ab9670bc9685096dddd66836d02e1,f32eb266bd1ff9a3] 1 --- [or-http-epoll-1] s.m.u.h.GlobalControllerExceptionHandler : Returning HTTP status: 404 NOT_FOUND for path: /product-composite/13, message: Product Id: 13 not found
+      format /^(?<time>\d{4}-\d{2}-\d{2}\s\d{2}:\d{2}:\d{2}\.\d{3})\s+(?<spring.level>[^\s]+)\s+(\[(?<spring.service>[^,]*),(?<spring.trace>[^,]*),(?<spring.span>[^\]]*)]*\])\s+(?<spring.pid>\d+)\s+---\s+\[\s*(?<spring.thread>[^\]]+)\]\s+(?<spring.class>[^\s]+)\s*:\s+(?<log>.*)$/
+    </filter>
+```
+
+fluentd 를 설정하기 위한 config amp 설정
+
+```yaml
+<match kubernetes.**istio**>
+      @type rewrite_tag_filter
+      <rule>
+        key log
+        pattern ^(.*)$
+        tag istio.${tag}
+      </rule>
+    </match>
+```
+
+[kubernetes.] 으로 시작하고 중간에 istio 문자열 이 포함된 tag에 해당하는 로직
+key - 로그 문자열에서 [log] 문자열을 찾도록 설정
+pattern - key 로 지정된 field 의 전체 문자열을 포함하도록 설정
+tag - istio.[원래 tag정보] 로 변환해서 다시 보내도록 설정
+
+fluentd 공식 사이트에서는 match 에 직접 파일 경로 를 지정하는 식으로 되어 있던데 k8s 에서는 k8s 로그 를 직접 캐치해서 가져오는 것도 가능한 모양
+
+전체 yaml
+```yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: fluentd-hands-on-config
+  namespace: kube-system
+data:
+  fluentd-hands-on.conf: |
+
+    <match kubernetes.**istio**>
+      @type rewrite_tag_filter
+      <rule>
+        key log
+        pattern ^(.*)$
+        tag istio.${tag}
+      </rule>
+    </match>
+
+    <match kubernetes.**hands-on**>
+      @type rewrite_tag_filter
+      <rule>
+        key log
+        pattern ^(.*)$
+        tag spring-boot.${tag}
+      </rule>
+    </match>
+
+    <match spring-boot.**>
+      @type rewrite_tag_filter
+      <rule>
+        key log
+        pattern /^\d{4}-\d{2}-\d{2}\s\d{2}:\d{2}:\d{2}\.\d{3}.*/
+        tag parse.${tag}
+      </rule>
+      <rule>
+        key log
+        pattern /^.*/
+        tag check.exception.${tag}
+      </rule>
+    </match>
+
+    <match check.exception.spring-boot.**>
+      @type detect_exceptions
+      languages java
+      remove_tag_prefix check
+      message log
+      multiline_flush_interval 5
+    </match>
+
+    <filter parse.spring-boot.**>
+      @type parser
+      key_name log
+      time_key time
+      time_format %Y-%m-%d %H:%M:%S.%N
+      reserve_data true
+      # Sample log message: 2021-03-27 13:07:28.642 DEBUG [product-composite,395ab9670bc9685096dddd66836d02e1,f32eb266bd1ff9a3] 1 --- [or-http-epoll-1] s.m.u.h.GlobalControllerExceptionHandler : Returning HTTP status: 404 NOT_FOUND for path: /product-composite/13, message: Product Id: 13 not found
+      format /^(?<time>\d{4}-\d{2}-\d{2}\s\d{2}:\d{2}:\d{2}\.\d{3})\s+(?<spring.level>[^\s]+)\s+(\[(?<spring.service>[^,]*),(?<spring.trace>[^,]*),(?<spring.span>[^\]]*)]*\])\s+(?<spring.pid>\d+)\s+---\s+\[\s*(?<spring.thread>[^\]]+)\]\s+(?<spring.class>[^\s]+)\s*:\s+(?<log>.*)$/
+    </filter>
+
+```
+@type rewrite_tag_filter : 일치하는 로그에 사용자 정의 tag 를 붙여서 다시 
+
+hands-on -> spring-boot -> parse / exception 으로 분기 -> exception 은 표시하고, parse(일반 로그) 는 특정형식으로 변환 (format 에 지정된 형식)
+
+#### k8s 없이 단독으로 테스트
+
+##### 사전 조건
+- docker 환경을 minikube -> docker 로 변경하고 docker-compose 를 이용해서 build 를 수행한다
+```bash
+eval $(minikube docker-env --unset)
+
+docker-compose build
+```
+
+##### 테스트 실행 
+```bash
+USE_K8S=false HOST=localhost PORT=8443 HEALTH_URL=https://localhost:8443 ./test-em-all.bash
+```
+
+minikube tunnel 실행시 먼저 sudo minikube tunnel 먼저 실행한 다음 minikube tunnel 을 실행해야 한다 그렇지 않으면 443 port 가 열리지 않음
+
+curl https://elasticsearch.minikube.me -sk | jq -r .tagline
+curl https://elasticsearch.minikube.me/_all/_count -sk | jq -r .count
+curl https://kibana.minikube.me -kLs -o /dev/null -w "%{http_code}\n"
+
+windows hosts 변경
+```aiignore
+Add-Content -Value "127.0.0.1 grafana.minikube.me tracing.minikube.me kiali.minikube.me prometheus.minikube.me minikube.me kibana.minikube.me elasticsearch.minikube.me mail.minikube.me health.minikube.me" -Path /windows/system32/drivers/etc/hosts
+```
+
+fluentd 정규식 검증 사이트
+https://fluentular.herokuapp.com/

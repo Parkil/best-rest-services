@@ -33,7 +33,7 @@ data:
       @type rewrite_tag_filter
       <rule>
         key log
-        pattern /^\d{4}-\d{2}-\d{2}\s\d{2}:\d{2}:\d{2}\.\d{3}.*/
+        pattern /^\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}:\d{2}\.\d{3}.*/
         tag parse.rabbitmq.${tag}
       </rule>
       <rule>
@@ -47,16 +47,16 @@ data:
       @type parser
       key_name log
       time_key time
-      time_format %Y-%m-%d %H:%M:%S.%N
+      time_format %Y-%m-%dT%H:%M:%S.%L%z
       reserve_data true
-      format /^(?<time>\d{4}-\d{2}-\d{2}\s\d{2}:\d{2}:\d{2}\.\d{3})\s+\[(?<level>[^\]]+)\]\s+<(?<pid>[^>]+)>\s+(?<log>.*)$/
+      format /^(?<time>\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}:\d{2}\.\d{3})\s+\[(?<level>[^\]]+)\]\s+<(?<pid>[^>]+)>\s+(?<log>.*)$/
     </filter>
 
     <match spring-boot.**>
       @type rewrite_tag_filter
       <rule>
         key log
-        pattern /^\d{4}-\d{2}-\d{2}\s\d{2}:\d{2}:\d{2}\.\d{3}.*/
+        pattern /^\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}:\d{2}\.\d{3}.*/
         tag parse.${tag}
       </rule>
       <rule>
@@ -76,10 +76,16 @@ data:
 
     <filter parse.spring-boot.**>
       @type parser
+      @log_level debug
       key_name log
       time_key time
-      time_format %Y-%m-%d %H:%M:%S.%N
+      time_format %Y-%m-%dT%H:%M:%S.%L%z
       reserve_data true
-      # Sample log message: 2021-03-27 13:07:28.642 DEBUG [product-composite,395ab9670bc9685096dddd66836d02e1,f32eb266bd1ff9a3] 1 --- [or-http-epoll-1] s.m.u.h.GlobalControllerExceptionHandler : Returning HTTP status: 404 NOT_FOUND for path: /product-composite/13, message: Product Id: 13 not found
-      format /^(?<time>\d{4}-\d{2}-\d{2}\s\d{2}:\d{2}:\d{2}\.\d{3})\s+(?<spring.level>[^\s]+)\s+(\[(?<spring.service>[^,]*),(?<spring.trace>[^,]*),(?<spring.span>[^\]]*)]*\])\s+(?<spring.pid>\d+)\s+---\s+\[\s*(?<spring.thread>[^\]]+)\]\s+(?<spring.class>[^\s]+)\s*:\s+(?:Returning HTTP status: (?<http.response.status_code>\d{3}) [^ ]+ for path:.*|(?<log>.*))$/
+      emit_invalid_record_to_error true
+      # Sample log message: 2025-12-28T10:32:22.762Z  INFO 1 --- [           main] o.s.c.s.binder.DefaultBinderFactory      : Constructing binder child context for rabbit
+      format /^(?<time>\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}:\d{2}\.\d{3}Z?)\s+(?<level>[^\s]+)\s+(?<pid>\d+)\s+---\s+\[\s*(?<thread>[^\]]+)\]\s+(?<class>[^\s]+)\s*:\s+(?<log>.*)$/
     </filter>
+    
+    <match parse.spring-boot.**>
+        @type stdout
+    </match>
