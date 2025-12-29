@@ -41,6 +41,9 @@ dependencies {
     annotationProcessor "org.mapstruct:mapstruct-processor:${mapstructVersion}"
     testAnnotationProcessor "org.mapstruct:mapstruct-processor:${mapstructVersion}"
 
+    // Micrometer (메트릭 수집)
+    implementation 'io.micrometer:micrometer-registry-prometheus'
+
     // java code test 를 위해서 독립 container 환경 구성
     implementation platform('org.testcontainers:testcontainers-bom:1.21.3')
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
